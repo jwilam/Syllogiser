@@ -81,7 +81,15 @@ No build process, no dependencies, no server required — it’s a single, self-
 - Minimum screen width: 320px (mobile-friendly)
 
 ## 🤝 Contributing
-Contributions are welcome and appreciated! Please read the guidelines below before contributing.
+Contributions are welcome and appreciated! 
+
+### Support the Project
+If you find Syllogiser useful:
+
+- Star the repository on GitHub
+- Share it with colleagues and students
+- Cite it in your publications
+- Report bugs and suggest improvements
 
 ### Ways to Contribute
 - Report Bugs: Open an issue describing the bug, steps to reproduce, and expected behavior
@@ -89,6 +97,13 @@ Contributions are welcome and appreciated! Please read the guidelines below befo
 - Improve Documentation: Fix typos, add examples, or clarify explanations
 - Submit Code: Fork, branch, code, test, and submit a pull request
 - Share: Tell others about Syllogiser, write tutorials, or create videos
+
+### Feedback
+We welcome your feedback to improve Syllogiser! You can:
+
+- Open an issue on GitHub
+- Send an email with suggestions
+- Share your use cases and experiences
 
 ### Reporting Issues
 When reporting bugs, please include:
@@ -99,6 +114,12 @@ When reporting bugs, please include:
 - Expected behavior vs. actual behavior
 - Screenshots if applicable
 - Console errors if any
+
+## ☎️ Contact & Support
+### Getting Help
+Documentation: Read this README and the built-in Help modal
+- Issues: GitHub Issues
+- Email: jwilam@hku.hk
 
 ## 📝 Citation
 If you use Syllogiser in your research, teaching, or publications, please cite:
