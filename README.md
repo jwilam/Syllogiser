@@ -75,7 +75,7 @@ Visit the live demo at: https://jwilam.github.io/Syllogiser/Syllogiser_v30.html
 
 No build process, no dependencies, no server required — it’s a single, self-contained HTML file!
 
-# System Requirements
+### System Requirements
 - Any modern web browser (Chrome, Firefox, Safari, Edge)
 - JavaScript enabled
 - Minimum screen width: 320px (mobile-friendly)
