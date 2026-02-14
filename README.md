@@ -80,6 +80,93 @@ No build process, no dependencies, no server required — it’s a single, self-
 - JavaScript enabled
 - Minimum screen width: 320px (mobile-friendly)
 
+## 📘 Usage Guide
+
+### Statement Mode
+
+Statement Mode is designed for analyzing individual categorical propositions.
+
+1. Switch to **Statement Mode** using the toggle at the top of the left panel.
+2. Enter terms in the **Premise** row:
+   - Type the subject term (e.g., “dogs”)
+   - Type the predicate term (e.g., “mammals”)
+3. Select logical operators:
+   - Quantifier: “All” or “Some”
+   - Copula: “are” or “are not”
+4. View the proposition type: the type (**A, E, I, O**) is automatically displayed.
+5. Create a diagram: use the canvas on the right to visualize the proposition.
+6. Copy to syllogism: use the copy buttons to transfer premises to **Syllogism Mode**.
+
+---
+
+### Syllogism Mode
+
+Syllogism Mode is designed for analyzing categorical syllogisms.
+
+1. Switch to **Syllogism Mode** using the toggle (default mode).
+2. Enter **Premise 1**:
+   - Subject term (e.g., “men”)
+   - Predicate term (e.g., “mortal”)
+   - Select quantifier and copula
+3. Enter **Premise 2**:
+   - Subject term (e.g., “Greeks”)
+   - Predicate term (e.g., “men”)
+   - Select quantifier and copula
+4. Select **Conclusion** terms from the dropdown menus:
+   - The system requires exactly **3 unique terms** across both premises.
+   - Subject and Predicate dropdowns are populated automatically.
+5. Check validity: click the **Check Validity** button to analyze.
+6. View results: see the mood–figure code, traditional name, and validity status.
+7. Use **System Proving**: click to see detailed rule-by-rule analysis.
+
+---
+
+## ✍️ Creating Diagrams
+
+### Basic Operations
+
+| Action                 | Mouse            | Touch                   |
+|------------------------|------------------|-------------------------|
+| Color a region         | Click on region  | Tap on region           |
+| Paint multiple regions | Click and drag   | Touch and drag          |
+| Move a circle          | Drag from center | Touch and drag from center |
+| Resize a circle        | Drag from edge   | Touch and drag from edge   |
+| Move existence marker  | Drag the **X**   | Touch and drag the **X**   |
+
+### Toolbar Functions
+
+- **Color Palette**: Select a color before clicking on regions
+- **Clear All**: Remove all coloring from the diagram
+- **Add Existence**: Place an **X** marker on the canvas
+- **Clear Existence**: Remove all **X** markers
+- **Boolean/Aristotelian Toggle**: Switch logic systems
+
+### Tips for Effective Diagrams
+
+- Use **Diagram 1** for premise visualization
+- Use **Diagram 2** for conclusion or comparison
+- For **Euler diagrams**: resize and reposition circles to show containment or exclusion
+- For **Venn diagrams**: shade regions to show empty sets
+- The transparent color (white button) acts as an eraser
+
+---
+
+## 🔗 Sorites (Chain Syllogisms)
+
+Syllogiser supports the analysis of sorites through copy functions:
+
+1. In **Statement Mode**:
+   - “Premise → Syllogism P1”: Copies current statement to Premise 1
+   - “Premise → Syllogism P2”: Copies current statement to Premise 2
+2. In **Syllogism Mode**:
+   - “Conclusion → P1”: Copies the conclusion to Premise 1 for chaining
+3. Workflow for sorites:
+   - Analyze first pair of premises
+   - Check validity
+   - Copy conclusion to P1
+   - Enter next premise in P2
+   - Repeat until final conclusion
+
 ## 🤝 Contributing
 Contributions are welcome and appreciated! 
 
