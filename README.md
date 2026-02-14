@@ -8,7 +8,7 @@
 
 Syllogiser is an interactive, educational web application for visualizing and analyzing categorical propositions and syllogistic arguments using Venn and Euler diagrams. It supports both Boolean and Aristotelian logic systems and provides comprehensive validity checking for syllogisms.
 
-![Syllogiser Screenshot](screenshots/main-interface.png)
+![Syllogiser Screenshot](https://jwilam.github.io/Syllogiser/syllogiser.png)
 
 ## 🌟 Features
 
