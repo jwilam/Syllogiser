@@ -79,3 +79,27 @@ No build process, no dependencies, no server required — it’s a single, self-
 - Any modern web browser (Chrome, Firefox, Safari, Edge)
 - JavaScript enabled
 - Minimum screen width: 320px (mobile-friendly)
+
+##📝 Citation
+If you use Syllogiser in your research, teaching, or publications, please cite:
+
+### APA Format
+Lam, W. I. (2026). Syllogiser: A Venn and Euler diagram tool for categorical logic [Computer software]. GitHub. https://github.com/jwilam/syllogiser
+
+### MLA Format
+Lam, Wai Ip. Syllogiser: A Venn and Euler Diagram Tool for Categorical Logic. Version 30, 2026, github.com/jwilam/syllogiser.
+
+### Chicago Format
+Lam, Wai Ip. “Syllogiser: A Venn and Euler Diagram Tool for Categorical Logic.” Computer software. GitHub, 2026. https://github.com/jwilam/syllogiser.
+
+BibTeX
+   ```bibtex
+   @software{lam2026syllogiser,
+     author    = {Lam, Wai Ip},
+     title     = {Syllogiser: A Venn and Euler Diagram Tool for Categorical Logic},
+     year      = {2026},
+     version   = {30},
+     publisher = {GitHub},
+     url       = {https://github.com/jwilam/syllogiser},
+     note      = {Interactive web application for visualizing categorical logic}
+   }
