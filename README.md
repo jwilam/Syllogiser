@@ -118,8 +118,15 @@ When reporting bugs, please include:
 ## ☎️ Contact & Support
 ### Getting Help
 Documentation: Read this README and the built-in Help modal
-- Issues: GitHub Issues
-- Email: jwilam@hku.hk
+
+### 👤 Author
+LAM Wai Ip 林葦葉
+
+- Institution: Faculty of Education, The University of Hong Kong (HKU)
+- Official Website: https://web.edu.hku.hk/faculty-academics/jwilam
+- Personal Website: https://jwilam.com
+- Email (Official): jwilam@hku.hk
+- Email (Personal): jwilam@gmail.com
 
 ## 📝 Citation
 If you use Syllogiser in your research, teaching, or publications, please cite:
