@@ -68,11 +68,10 @@ Visit the live demo at: https://jwilam.github.io/Syllogiser/Syllogiser_v30.html
 
 3. Open in browser:
    ```bash
-
-# Simply open index.html in any modern web browser
-open index.html      # macOS
-start index.html     # Windows
-xdg-open index.html  # Linux
+   # Simply open index.html in any modern web browser
+   open index.html      # macOS
+   start index.html     # Windows
+   xdg-open index.html  # Linux
 
 No build process, no dependencies, no server required — it’s a single, self-contained HTML file!
 
