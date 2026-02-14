@@ -10,6 +10,8 @@ Syllogiser is an interactive, educational web application for visualizing and an
 
 ![Syllogiser Screenshot](https://jwilam.github.io/Syllogiser/syllogiser.png)
 
+---
+
 ## 🌟 Features
 
 ### Core Functionality
@@ -53,6 +55,8 @@ Syllogiser is an interactive, educational web application for visualizing and an
 - **10 Color Options**: Full color palette for diagram shading
 - **Layout Options**: Choose upright or inverted diagram orientation
 
+---
+
 ## 🚀 Quick Start
 
 ### Online Demo
@@ -80,6 +84,8 @@ No build process, no dependencies, no server required — it’s a single, self-
 - JavaScript enabled
 - Minimum screen width: 320px (mobile-friendly)
 
+---
+
 ## 📘 Usage Guide
 
 ### Statement Mode
@@ -96,8 +102,6 @@ Statement Mode is designed for analyzing individual categorical propositions.
 4. View the proposition type: the type (**A, E, I, O**) is automatically displayed.
 5. Create a diagram: use the canvas on the right to visualize the proposition.
 6. Copy to syllogism: use the copy buttons to transfer premises to **Syllogism Mode**.
-
----
 
 ### Syllogism Mode
 
@@ -167,6 +171,8 @@ Syllogiser supports the analysis of sorites through copy functions:
    - Enter next premise in P2
    - Repeat until final conclusion
 
+---
+
 ## 🤝 Contributing
 Contributions are welcome and appreciated! 
 
@@ -202,6 +208,8 @@ When reporting bugs, please include:
 - Screenshots if applicable
 - Console errors if any
 
+---
+
 ## ☎️ Contact & Support
 ### Getting Help
 Documentation: Read this README and the built-in Help modal
@@ -214,6 +222,8 @@ LAM Wai Ip 林葦葉
 - Personal Website: https://jwilam.com
 - Email (Official): jwilam@hku.hk
 - Email (Personal): jwilam@gmail.com
+
+---
 
 ## 📝 Citation
 If you use Syllogiser in your research, teaching, or publications, please cite:
