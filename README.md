@@ -80,7 +80,7 @@ No build process, no dependencies, no server required — it’s a single, self-
 - JavaScript enabled
 - Minimum screen width: 320px (mobile-friendly)
 
-##📝 Citation
+## 📝 Citation
 If you use Syllogiser in your research, teaching, or publications, please cite:
 
 ### APA Format
@@ -103,3 +103,23 @@ BibTeX
      url       = {https://github.com/jwilam/syllogiser},
      note      = {Interactive web application for visualizing categorical logic}
    }
+
+## 🤝 Contributing
+Contributions are welcome and appreciated! Please read the guidelines below before contributing.
+
+### Ways to Contribute
+- Report Bugs: Open an issue describing the bug, steps to reproduce, and expected behavior
+- Suggest Features: Open an issue with the “enhancement” label
+- Improve Documentation: Fix typos, add examples, or clarify explanations
+- Submit Code: Fork, branch, code, test, and submit a pull request
+- Share: Tell others about Syllogiser, write tutorials, or create videos
+
+### Reporting Issues
+When reporting bugs, please include:
+
+- Browser name and version
+- Operating system
+- Steps to reproduce the issue
+- Expected behavior vs. actual behavior
+- Screenshots if applicable
+- Console errors if any
