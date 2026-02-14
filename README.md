@@ -56,8 +56,7 @@ Syllogiser is an interactive, educational web application for visualizing and an
 ## 🚀 Quick Start
 
 ### Online Demo
-Visit the live demo at: [Your GitHub Pages URL]
-
+Visit the live demo at: https://jwilam.github.io/Syllogiser/Syllogiser_v30.html
 ### Local Installation
 1. Clone the repository:
    ```bash
