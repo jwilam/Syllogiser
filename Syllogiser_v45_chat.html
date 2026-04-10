@@ -1,0 +1,2141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Syllogiser - Statement & Syllogism Visualiser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            height: 100vh;
+            overflow: hidden;
+            background: #f0f4f8;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 100%;
+        }
+
+        .left-panel {
+            min-width: 320px;
+            width: 48%;
+            background: #ffffff;
+            padding: 20px;
+            overflow-y: auto;
+            border-right: 2px solid #e2e8f0;
+        }
+
+        .resizer {
+            width: 6px;
+            background: #cbd5e1;
+            cursor: col-resize;
+            transition: background 0.2s;
+            touch-action: none;
+        }
+
+        .resizer:hover,
+        .resizer.active {
+            background: #94a3b8;
+        }
+
+        .right-panel {
+            flex: 1;
+            min-width: 400px;
+            background: #f8fafc;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .title-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 1.3rem;
+            color: #1e293b;
+            text-align: center;
+        }
+
+        .help-btn {
+            padding: 6px 14px;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+        }
+
+        .help-btn:hover {
+            background: linear-gradient(135deg, #4f46e5, #4338ca);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        h2 {
+            font-size: 1.1rem;
+            color: #475569;
+            margin-bottom: 15px;
+        }
+
+        .help-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .help-modal-overlay.visible {
+            display: flex;
+        }
+
+        .help-modal {
+            background: white;
+            border-radius: 16px;
+            max-width: 900px;
+            max-height: 90vh;
+            width: 100%;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .help-modal-header {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: white;
+            padding: 20px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .help-modal-header h2 {
+            color: white;
+            margin: 0;
+            font-size: 1.4rem;
+        }
+
+        .help-modal-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .help-modal-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .help-modal-content {
+            padding: 25px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .help-section { margin-bottom: 25px; }
+        .help-section:last-child { margin-bottom: 0; }
+        .help-section h3 { color: #1e40af; font-size: 1.15rem; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
+        .help-section h4 { color: #475569; font-size: 1rem; margin: 15px 0 8px 0; }
+        .help-section p { color: #475569; line-height: 1.7; margin-bottom: 10px; }
+        .help-section ul { margin-left: 20px; color: #475569; line-height: 1.8; }
+        .help-section li { margin-bottom: 6px; }
+        .help-section li strong { color: #1e40af; }
+
+        .help-tip { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px 15px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+        .help-tip p { margin: 0; color: #1e40af; }
+        .help-warning { background: #fef3c7; border-left: 4px solid #f59e0b; padding: 12px 15px; margin: 15px 0; border-radius: 0 8px 8px 0; }
+        .help-warning p { margin: 0; color: #92400e; }
+
+        .help-table { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.9rem; }
+        .help-table th, .help-table td { border: 1px solid #e2e8f0; padding: 10px 12px; text-align: left; }
+        .help-table th { background: #f1f5f9; color: #1e40af; font-weight: 600; }
+        .help-table td { color: #475569; }
+        .help-table tr:nth-child(even) { background: #f8fafc; }
+
+        .help-table-shortcut { width: 100%; border-collapse: collapse; margin: 15px 0; font-size: 0.9rem; }
+        .help-table-shortcut th, .help-table-shortcut td { border: 1px solid #e2e8f0; padding: 10px 12px; text-align: left; }
+        .help-table-shortcut th { background: #fef3c7; color: #92400e; font-weight: 600; }
+        .help-table-shortcut td { color: #475569; }
+        .help-table-shortcut tr:nth-child(even) { background: #fffbeb; }
+        .help-table-shortcut tr:nth-child(odd) { background: #fefce8; }
+
+        .help-credits { background: linear-gradient(135deg, #f8fafc, #f1f5f9); border-radius: 12px; padding: 20px; margin-top: 20px; }
+        .help-credits-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; }
+        .help-credit-item { text-align: center; }
+        .help-credit-item .label { font-size: 0.8rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .help-credit-item .value { font-size: 1rem; color: #1e293b; font-weight: 600; }
+        .help-license { background: white; border-radius: 8px; padding: 15px; margin: 15px 0; }
+        .help-license h4 { color: #1e40af; margin-top: 0; }
+        .help-citation { background: #e0e7ff; padding: 12px 15px; border-radius: 6px; font-family: 'Georgia', serif; font-style: italic; color: #3730a3; }
+        .help-contact { background: white; border-radius: 8px; padding: 15px; margin-top: 15px; }
+        .help-contact h4 { color: #1e40af; margin-top: 0; margin-bottom: 10px; }
+        .help-contact p { margin: 8px 0; }
+        .help-contact a { color: #2563eb; text-decoration: none; }
+        .help-contact a:hover { text-decoration: underline; }
+
+        .help-subsection { background: #fffbeb; border: 1px solid #fcd34d; border-radius: 10px; padding: 15px; margin-top: 20px; }
+        .help-subsection h4 { color: #92400e; font-size: 1.05rem; margin-top: 0; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+        .help-subsection p { color: #78350f; margin-bottom: 10px; }
+        .help-derivation-box { background: white; border-radius: 8px; padding: 12px 15px; margin: 10px 0; border-left: 3px solid #f59e0b; }
+        .help-derivation-box strong { color: #b45309; }
+
+        .help-settings-box { background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; padding: 15px; margin: 15px 0; }
+        .help-settings-box h4 { color: #166534; margin-top: 0; margin-bottom: 12px; }
+
+        .layout-options { display: flex; gap: 15px; flex-wrap: wrap; }
+        .layout-option { flex: 1; min-width: 200px; background: white; border: 2px solid #d1d5db; border-radius: 10px; padding: 15px; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .layout-option:hover { border-color: #3b82f6; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2); }
+        .layout-option.selected { border-color: #3b82f6; background: #eff6ff; }
+        .layout-option .layout-icon { font-size: 2.5rem; margin-bottom: 10px; }
+        .layout-option .layout-name { font-weight: 600; color: #1e293b; margin-bottom: 5px; }
+        .layout-option .layout-desc { font-size: 0.85rem; color: #64748b; }
+        .layout-diagram { width: 80px; height: 60px; margin: 0 auto 10px; position: relative; }
+        .layout-diagram .circle { width: 30px; height: 30px; border: 2px solid; border-radius: 50%; position: absolute; }
+        .layout-diagram .circle.s { border-color: #3b82f6; left: 5px; }
+        .layout-diagram .circle.p { border-color: #ef4444; right: 5px; }
+        .layout-diagram .circle.m { border-color: #22c55e; left: 50%; transform: translateX(-50%); }
+        .layout-diagram.upright .circle.s { bottom: 0; }
+        .layout-diagram.upright .circle.p { bottom: 0; }
+        .layout-diagram.upright .circle.m { top: 0; }
+        .layout-diagram.inverted .circle.s { top: 0; }
+        .layout-diagram.inverted .circle.p { top: 0; }
+        .layout-diagram.inverted .circle.m { bottom: 0; }
+
+        .terminology-settings-box { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 10px; padding: 15px; margin: 15px 0; }
+        .terminology-settings-box h4 { color: #92400e; margin-top: 0; margin-bottom: 12px; }
+        .terminology-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; }
+        .terminology-table th, .terminology-table td { border: 1px solid #e2e8f0; padding: 12px 15px; text-align: left; }
+        .terminology-table th { background: #fef3c7; color: #92400e; font-weight: 600; text-align: center; }
+        .terminology-table td { background: white; }
+        .terminology-table .term-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+        .terminology-table .term-row:last-child { margin-bottom: 0; }
+        .terminology-table .term-label { font-weight: 600; color: #475569; min-width: 80px; }
+        .terminology-table .term-input { flex: 1; padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.9rem; }
+        .terminology-table .term-input:focus { outline: none; border-color: #f59e0b; box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2); }
+        .terminology-note { margin-top: 10px; font-size: 0.85rem; color: #78350f; font-style: italic; }
+        .apply-terminology-btn { margin-top: 12px; padding: 8px 16px; background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .apply-terminology-btn:hover { background: linear-gradient(135deg, #d97706, #b45309); transform: translateY(-1px); }
+        .reset-terminology-btn { margin-top: 12px; margin-left: 10px; padding: 8px 16px; background: #6b7280; color: white; border: none; border-radius: 6px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; }
+        .reset-terminology-btn:hover { background: #4b5563; }
+
+        .singular-note { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 12px 15px; margin-top: 15px; }
+        .singular-note h4 { color: #92400e; margin: 0 0 8px 0; font-size: 0.95rem; }
+        .singular-note p { color: #78350f; margin: 0; font-size: 0.9rem; }
+
+        .help-sorites-box { background: #fdf4ff; border: 1px solid #e879f9; border-radius: 10px; padding: 15px; margin: 15px 0; }
+        .help-sorites-box h4 { color: #86198f; margin-top: 0; margin-bottom: 12px; }
+        .help-sorites-box p { color: #701a75; }
+        .help-sorites-example { background: white; border-radius: 8px; padding: 12px 15px; margin: 10px 0; border-left: 3px solid #c026d3; }
+        .help-sorites-example .premise { margin: 4px 0; color: #475569; }
+        .help-sorites-example .conclusion { margin-top: 8px; padding-top: 8px; border-top: 1px dashed #e879f9; color: #86198f; font-weight: 600; }
+
+        .help-euler-box { background: #ecfeff; border: 1px solid #22d3d1; border-radius: 10px; padding: 15px; margin: 15px 0; }
+        .help-euler-box h4 { color: #0e7490; margin-top: 0; margin-bottom: 12px; }
+        .help-euler-box p { color: #155e75; }
+        .help-euler-comparison { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+        .help-euler-item { background: white; border-radius: 8px; padding: 12px 15px; border: 1px solid #cffafe; }
+        .help-euler-item h5 { color: #0891b2; margin: 0 0 8px 0; font-size: 0.95rem; }
+        .help-euler-item p { margin: 0; font-size: 0.85rem; }
+
+        .help-data-box { background: #ecfdf5; border: 1px solid #6ee7b7; border-radius: 10px; padding: 15px; margin: 15px 0; }
+        .help-data-box h4 { color: #047857; margin-top: 0; margin-bottom: 12px; }
+        .help-data-box p { color: #065f46; }
+        .help-data-example { background: white; border-radius: 8px; padding: 12px 15px; margin: 10px 0; border-left: 3px solid #10b981; font-family: monospace; font-size: 0.85rem; color: #374151; white-space: pre-line; }
+
+        .mode-control-container { display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 20px; padding: 15px; background: #f1f5f9; border-radius: 10px; flex-wrap: wrap; }
+        .upload-section { display: flex; align-items: center; gap: 8px; }
+        .upload-btn { padding: 8px 14px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; gap: 5px; }
+        .upload-btn:hover { background: linear-gradient(135deg, #059669, #047857); transform: translateY(-1px); }
+        .upload-btn input[type="file"] { display: none; }
+
+        .nav-section { display: flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #3b82f6, #2563eb); padding: 6px 10px; border-radius: 8px; box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3); }
+        .nav-btn { width: 32px; height: 32px; background: rgba(255, 255, 255, 0.2); color: white; border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 6px; cursor: pointer; font-size: 1rem; font-weight: bold; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+        .nav-btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.3); }
+        .nav-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .nav-position { color: white; font-size: 0.9rem; font-weight: 600; min-width: 50px; text-align: center; }
+        .nav-goto { display: flex; align-items: center; gap: 4px; }
+        .nav-goto input { width: 50px; height: 32px; background: rgba(255, 255, 255, 0.9); color: #1e40af; border: 1px solid rgba(255, 255, 255, 0.5); border-radius: 6px; text-align: center; font-size: 0.85rem; }
+        .nav-goto input:focus { outline: none; border-color: white; background: white; }
+        .nav-goto input::placeholder { color: #93c5fd; }
+        .nav-go-btn { padding: 6px 12px; background: white; color: #2563eb; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; height: 32px; transition: all 0.2s; }
+        .nav-go-btn:hover { background: #eff6ff; }
+
+        .mode-toggle-container { display: flex; align-items: center; gap: 10px; }
+        .mode-label { font-size: 0.95rem; font-weight: 600; color: #64748b; transition: color 0.3s; }
+        .mode-label.active { color: #1e40af; }
+        .mode-toggle { position: relative; width: 80px; height: 36px; background: #3b82f6; border-radius: 18px; cursor: pointer; transition: background 0.3s; }
+        .mode-toggle.statement-mode { background: #8b5cf6; }
+        .mode-toggle-slider { position: absolute; top: 3px; right: 3px; width: 30px; height: 30px; background: white; border-radius: 50%; transition: transform 0.3s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
+        .mode-toggle.statement-mode .mode-toggle-slider { transform: translateX(-44px); }
+
+        .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px; }
+        .header-left { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        .button-group { display: flex; gap: 8px; flex-wrap: wrap; }
+        .reset-btn { padding: 8px 16px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: background 0.2s; display: flex; align-items: center; gap: 6px; }
+        .reset-btn:hover { background: #dc2626; }
+        .copy-btn { padding: 8px 12px; background: #8b5cf6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: background 0.2s; display: flex; align-items: center; gap: 5px; }
+        .copy-btn:hover { background: #7c3aed; }
+        .copy-btn.green { background: #10b981; }
+        .copy-btn.green:hover { background: #059669; }
+
+        .proposition-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 0.9rem; }
+        .proposition-table th, .proposition-table td { border: 1px solid #e2e8f0; padding: 10px 8px; text-align: center; }
+        .proposition-table th { background: #3b82f6; color: white; font-weight: 600; }
+        .proposition-table.statement-mode th { background: #8b5cf6; }
+        .proposition-table td:first-child { background: #eff6ff; font-weight: 600; color: #1e40af; min-width: 120px; }
+        .proposition-table.statement-mode td:first-child { background: #f5f3ff; color: #6d28d9; }
+        .proposition-table select, .proposition-table input { width: 100%; padding: 6px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.85rem; }
+        .proposition-table select:focus, .proposition-table input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+        .proposition-table input.error { border-color: #ef4444; background-color: #fef2f2; }
+
+        .term-cell { position: relative; }
+        .term-cell input, .term-cell select { padding-right: 35px; }
+        .distribution-badge { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); font-size: 0.7rem; font-weight: bold; padding: 2px 5px; border-radius: 3px; pointer-events: none; }
+        .distribution-badge.distributed { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+        .distribution-badge.undistributed { background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; }
+
+        .copula-cell { position: relative; }
+        .copula-cell select { width: 100%; }
+        .alternative-expression { display: block; font-size: 0.7rem; color: #059669; font-weight: 600; margin-top: 4px; padding: 2px 4px; background: #ecfdf5; border-radius: 3px; }
+        .quantifier-cell { position: relative; }
+        .alternative-quantifier { display: block; font-size: 0.7rem; color: #059669; font-weight: 600; margin-top: 4px; padding: 2px 4px; background: #ecfdf5; border-radius: 3px; }
+
+        .type-display { display: flex; justify-content: space-around; margin-top: 20px; padding: 15px; background: #f1f5f9; border-radius: 8px; }
+        .type-item { text-align: center; }
+        .type-label { font-size: 0.8rem; color: #64748b; margin-bottom: 5px; }
+        .type-value { font-size: 1.5rem; font-weight: bold; color: #3b82f6; }
+        .type-display.statement-mode .type-value { color: #8b5cf6; }
+
+        .knowledge-table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.85rem; }
+        .knowledge-table th, .knowledge-table td { border: 1px solid #e2e8f0; padding: 12px; text-align: left; vertical-align: top; }
+        .knowledge-table th { background: #1e40af; color: white; font-weight: 600; text-align: center; }
+        .knowledge-table td:first-child { background: #fefce8; width: 45%; }
+        .knowledge-table td:last-child { background: #f0fdf4; width: 55%; }
+        .knowledge-section-title { font-weight: bold; color: #854d0e; margin-bottom: 8px; }
+        .knowledge-item { margin: 6px 0; color: #374151; line-height: 1.5; }
+        .knowledge-item strong { color: #1e40af; }
+        .figure-title { font-weight: bold; color: #166534; margin-top: 10px; margin-bottom: 4px; }
+        .figure-title:first-child { margin-top: 0; }
+        .figure-pattern { font-family: monospace; background: #dcfce7; padding: 2px 6px; border-radius: 4px; color: #166534; }
+
+        .warning-box { margin-top: 15px; padding: 12px 15px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; color: #dc2626; font-size: 0.85rem; display: none; }
+        .warning-box.visible { display: block; }
+        .warning-box h4 { margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+        .warning-box ul { margin-left: 20px; }
+        .warning-box li { margin: 4px 0; }
+        .validation-success { margin-top: 15px; padding: 12px 15px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; color: #16a34a; font-size: 0.85rem; display: none; }
+        .validation-success.visible { display: block; }
+
+        .check-validity-btn { display: block; width: 100%; margin-top: 15px; padding: 14px 24px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border: none; border-radius: 10px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(59, 130, 246, 0.3); }
+        .check-validity-btn:hover:not(:disabled) { background: linear-gradient(135deg, #2563eb, #1e40af); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4); }
+        .check-validity-btn:active:not(:disabled) { transform: translateY(0); }
+        .check-validity-btn:disabled { background: linear-gradient(135deg, #94a3b8, #64748b); cursor: not-allowed; box-shadow: none; }
+
+        .validity-display { margin-top: 15px; padding: 20px; border-radius: 12px; text-align: center; }
+        .validity-display.pending { background: linear-gradient(135deg, #f8fafc, #e2e8f0); border: 3px solid #94a3b8; }
+        .validity-display.valid { background: linear-gradient(135deg, #ecfdf5, #d1fae5); border: 3px solid #10b981; }
+        .validity-display.conditional { background: linear-gradient(135deg, #fffbeb, #fef3c7); border: 3px solid #f59e0b; }
+        .validity-display.invalid { background: linear-gradient(135deg, #fef2f2, #fecaca); border: 3px solid #ef4444; }
+        .validity-form-code { font-size: 2rem; font-weight: bold; letter-spacing: 3px; margin-bottom: 10px; }
+        .validity-display.pending .validity-form-code { color: #64748b; }
+        .validity-display.valid .validity-form-code { color: #059669; }
+        .validity-display.conditional .validity-form-code { color: #d97706; }
+        .validity-display.invalid .validity-form-code { color: #dc2626; }
+        .validity-name { font-size: 1.5rem; font-weight: 600; margin-bottom: 10px; }
+        .validity-display.pending .validity-name { color: #475569; }
+        .validity-display.valid .validity-name { color: #047857; }
+        .validity-display.conditional .validity-name { color: #b45309; }
+        .validity-display.invalid .validity-name { color: #b91c1c; }
+        .validity-badge { display: inline-block; padding: 8px 24px; border-radius: 20px; font-size: 1.1rem; font-weight: bold; text-transform: uppercase; letter-spacing: 1px; }
+        .validity-display.pending .validity-badge { background: #94a3b8; color: white; }
+        .validity-display.valid .validity-badge { background: #10b981; color: white; }
+        .validity-display.conditional .validity-badge { background: #f59e0b; color: white; }
+        .validity-display.invalid .validity-badge { background: #ef4444; color: white; }
+        .validity-note { margin-top: 12px; font-size: 0.85rem; padding: 10px; background: rgba(255, 255, 255, 0.7); border-radius: 8px; }
+        .validity-display.pending .validity-note { color: #475569; }
+        .validity-display.valid .validity-note { color: #065f46; }
+        .validity-display.conditional .validity-note { color: #92400e; }
+        .validity-display.invalid .validity-note { color: #991b1b; }
+
+        .term-label { transition: all 0.3s ease; }
+        .term-label.major { color: #16a34a; }
+        .term-label.minor { color: #ea580c; }
+
+        .divider { width: 1px; height: 24px; background: #cbd5e1; }
+        .divider-vertical { width: 2px; height: 40px; background: #cbd5e1; margin: 0 5px; }
+
+        .tab-container { display: flex; background: #e2e8f0; border-bottom: 2px solid #cbd5e1; flex-shrink: 0; }
+        .tab-btn { flex: 1; padding: 15px 20px; background: #e2e8f0; border: none; cursor: pointer; font-size: 1rem; font-weight: 600; color: #64748b; transition: all 0.3s; position: relative; }
+        .tab-btn:hover { background: #f1f5f9; color: #475569; }
+        .tab-btn.active { background: #f8fafc; color: #1e40af; }
+        .tab-btn.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 0; height: 3px; background: #3b82f6; }
+        .tab-btn .tab-icon { margin-right: 8px; }
+        .tab-btn.premises { border-right: 1px solid #cbd5e1; }
+        .tab-btn.premises.active { color: #7c3aed; }
+        .tab-btn.premises.active::after { background: #7c3aed; }
+        .tab-btn.conclusion.active { color: #059669; }
+        .tab-btn.conclusion.active::after { background: #059669; }
+
+        .tab-content { flex: 1; position: relative; display: none; overflow: hidden; flex-direction: column; }
+        .tab-content.active { display: flex; }
+        .canvas-container { width: 100%; flex: 1; position: relative; min-height: 0; }
+        .venn-canvas { width: 100%; height: 100%; cursor: default; touch-action: none; }
+
+        .toolbar { position: relative; display: flex; flex-direction: column; gap: 10px; background: rgba(255, 255, 255, 0.98); padding: 12px 15px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); z-index: 10; flex-shrink: 0; }
+        .toolbar-row { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; }
+        .toolbar-section { display: flex; align-items: center; gap: 8px; }
+        .toolbar-btn { padding: 6px 12px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 0.8rem; font-weight: 600; transition: background 0.2s; }
+        .toolbar-btn:hover { background: #2563eb; }
+        .toolbar-btn.danger { background: #ef4444; }
+        .toolbar-btn.danger:hover { background: #dc2626; }
+
+        .toggle-container { display: flex; align-items: center; gap: 8px; }
+        .toggle-label { font-size: 0.75rem; color: #64748b; }
+        .toggle-switch { position: relative; width: 100px; height: 30px; background: #e2e8f0; border-radius: 15px; cursor: pointer; transition: background 0.3s; }
+        .toggle-switch.aristotelian { background: #c7d2fe; }
+        .toggle-slider { position: absolute; top: 3px; left: 3px; width: 46px; height: 24px; background: white; border-radius: 12px; transition: transform 0.3s; display: flex; align-items: center; justify-content: center; font-size: 0.65rem; font-weight: bold; color: #475569; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); }
+        .toggle-switch.aristotelian .toggle-slider { transform: translateX(48px); color: #4f46e5; }
+
+        .color-palette { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; align-items: center; }
+        .color-btn { width: 28px; height: 28px; border-radius: 50%; border: 3px solid transparent; cursor: pointer; transition: transform 0.2s, border-color 0.2s; }
+        .color-btn:hover { transform: scale(1.15); }
+        .color-btn.selected { border-color: #1e293b; }
+        .clear-btn { padding: 6px 12px; background: #ef4444; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.75rem; transition: background 0.2s; }
+        .clear-btn:hover { background: #dc2626; }
+        .reset-diagram-btn { padding: 6px 12px; background: #8b5cf6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.75rem; transition: background 0.2s; }
+        .reset-diagram-btn:hover { background: #7c3aed; }
+
+        .pattern-controls { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; padding: 8px 12px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .pattern-control-group { display: flex; align-items: center; gap: 6px; }
+        .pattern-control-label { font-size: 0.75rem; color: #475569; font-weight: 600; }
+        .pattern-slider { width: 80px; height: 6px; -webkit-appearance: none; appearance: none; background: #e2e8f0; border-radius: 3px; outline: none; }
+        .pattern-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; background: #3b82f6; border-radius: 50%; cursor: pointer; transition: background 0.2s; }
+        .pattern-slider::-webkit-slider-thumb:hover { background: #2563eb; }
+        .pattern-slider::-moz-range-thumb { width: 16px; height: 16px; background: #3b82f6; border-radius: 50%; cursor: pointer; border: none; }
+        .pattern-value { font-size: 0.75rem; color: #1e40af; font-weight: 600; min-width: 35px; text-align: center; }
+        .pattern-checkbox { width: 18px; height: 18px; cursor: pointer; accent-color: #3b82f6; }
+        .pattern-preview { width: 40px; height: 24px; border: 1px solid #cbd5e1; border-radius: 4px; overflow: hidden; }
+
+        /* ========== AUTO DRAW BUTTON STYLES ========== */
+        .auto-draw-section {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            background: linear-gradient(135deg, #fffbeb, #fef3c7);
+            border: 2px solid #fbbf24;
+            border-radius: 8px;
+            flex-wrap: nowrap;
+            justify-content: center;
+        }
+
+        .auto-draw-label {
+            font-size: 0.75rem;
+            color: #92400e;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== Auto Draw Toggle (Premises / Conclusion) ===== */
+        .auto-draw-toggle {
+            display: flex;
+            border: 2px solid #d97706;
+            border-radius: 6px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .auto-draw-toggle-btn {
+            padding: 5px 14px;
+            background: white;
+            color: #92400e;
+            border: none;
+            border-right: 1px solid #d97706;
+            cursor: pointer;
+            font-size: 0.73rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+
+        .auto-draw-toggle-btn:last-child {
+            border-right: none;
+        }
+
+        .auto-draw-toggle-btn.active {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        .auto-draw-toggle-btn:not(.active):hover {
+            background: #fef3c7;
+        }
+
+        .auto-draw-btn {
+            padding: 6px 14px;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        .auto-draw-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        .auto-draw-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .auto-draw-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08) !important;
+            filter: grayscale(50%);
+        }
+
+        .auto-draw-btn.p1 {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+        }
+        .auto-draw-btn.p1:hover:not(:disabled) {
+            background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        }
+
+        .auto-draw-btn.p2 {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+        .auto-draw-btn.p2:hover:not(:disabled) {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+        }
+
+        .auto-draw-btn.both-premises {
+            background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        }
+        .auto-draw-btn.both-premises:hover:not(:disabled) {
+            background: linear-gradient(135deg, #7c3aed, #6d28d9);
+        }
+
+        .auto-draw-btn.concl {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+        .auto-draw-btn.concl:hover:not(:disabled) {
+            background: linear-gradient(135deg, #059669, #047857);
+        }
+
+        .hidden { display: none !important; }
+
+        .proposition-types-info { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 0.85rem; }
+        .proposition-types-info th, .proposition-types-info td { border: 1px solid #e2e8f0; padding: 12px; text-align: left; vertical-align: top; }
+        .proposition-types-info th { background: #8b5cf6; color: white; font-weight: 600; text-align: center; }
+        .proposition-types-info td { background: #fefce8; }
+        .proposition-types-info .knowledge-item { margin: 6px 0; color: #374151; line-height: 1.5; }
+        .proposition-types-info .knowledge-item strong { color: #6d28d9; }
+
+        .proving-section { margin-top: 20px; }
+        .proving-section h3 { font-size: 1rem; color: #1e40af; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .proving-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-bottom: 15px; }
+        .proving-table th, .proving-table td { border: 1px solid #e2e8f0; padding: 10px 8px; text-align: left; vertical-align: top; }
+        .proving-table th { background: #1e40af; color: white; font-weight: 600; text-align: center; }
+        .proving-table th:nth-child(1) { width: 18%; }
+        .proving-table th:nth-child(2) { width: 40%; }
+        .proving-table th:nth-child(3) { width: 12%; }
+        .proving-table th:nth-child(4) { width: 30%; }
+        .proving-table td:first-child { background: #eff6ff; font-weight: 600; color: #1e40af; }
+        .proving-table td:nth-child(2) { background: #f8fafc; color: #475569; line-height: 1.4; }
+        .proving-table td:nth-child(3) { background: #fefce8; text-align: center; }
+        .proving-table td:nth-child(4) { background: #fef2f2; }
+        .proving-table select { padding: 6px 10px; border: 1px solid #d1d5db; border-radius: 4px; font-size: 0.85rem; cursor: pointer; width: 100%; }
+        .proving-table select:focus { outline: none; border-color: #3b82f6; }
+        .fallacy-text { color: #9ca3af; font-style: italic; }
+        .fallacy-text.active-no { color: #dc2626; font-weight: 600; font-style: normal; }
+        .fallacy-text.active-yes { color: transparent; }
+
+        .system-proving-btn { display: block; width: 100%; padding: 12px 20px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white; border: none; border-radius: 8px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3); margin-bottom: 20px; }
+        .system-proving-btn:hover:not(:disabled) { background: linear-gradient(135deg, #7c3aed, #5b21b6); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139, 92, 246, 0.4); }
+        .system-proving-btn:active:not(:disabled) { transform: translateY(0); }
+        .system-proving-btn:disabled { background: linear-gradient(135deg, #94a3b8, #64748b); cursor: not-allowed; box-shadow: none; }
+
+        .search-section { margin-top: 20px; padding: 15px; background: #f1f5f9; border-radius: 10px; }
+        .search-section h3 { font-size: 1rem; color: #1e40af; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+        .search-container { display: flex; gap: 10px; align-items: center; }
+        .search-input { flex: 1; padding: 10px 14px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; color: #1e293b; }
+        .search-input:focus { outline: none; border-color: #3b82f6; }
+        .search-btn { padding: 10px 20px; background: linear-gradient(135deg, #10b981, #059669); color: white; border: none; border-radius: 8px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 6px; }
+        .search-btn:hover { background: linear-gradient(135deg, #059669, #047857); transform: translateY(-1px); }
+
+        .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px); background: #1e293b; color: white; padding: 12px 24px; border-radius: 8px; font-size: 0.9rem; font-weight: 500; z-index: 2000; opacity: 0; transition: all 0.3s ease; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); }
+        .toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+        .toast.success { background: #10b981; }
+        .toast.info { background: #3b82f6; }
+        .toast.error { background: #ef4444; }
+
+        @media (max-width: 768px) {
+            .container { flex-direction: column; }
+            .left-panel { width: 100%; min-width: unset; max-height: 50vh; border-right: none; border-bottom: 2px solid #e2e8f0; }
+            .resizer { width: 100%; height: 6px; cursor: row-resize; }
+            .right-panel { min-width: unset; flex: 1; }
+            h1 { font-size: 1.1rem; }
+            .toolbar { padding: 10px 12px; gap: 8px; }
+            .toolbar-row { gap: 6px; }
+            .toolbar-btn { padding: 6px 10px; font-size: 0.75rem; }
+            .color-btn { width: 24px; height: 24px; }
+            .clear-btn, .reset-diagram-btn { padding: 5px 10px; font-size: 0.7rem; }
+            .tab-btn { padding: 12px 10px; font-size: 0.9rem; }
+            .canvas-container { min-height: 300px; }
+            .toggle-switch { width: 80px; height: 26px; }
+            .toggle-slider { width: 38px; height: 20px; font-size: 0.6rem; }
+            .toggle-switch.aristotelian .toggle-slider { transform: translateX(38px); }
+            .header-row { flex-direction: column; align-items: flex-start; }
+            .header-left { flex-direction: column; align-items: flex-start; width: 100%; }
+            .button-group { width: 100%; justify-content: flex-start; }
+            .copy-btn { font-size: 0.75rem; padding: 6px 10px; }
+            .help-euler-comparison { grid-template-columns: 1fr; }
+            .mode-control-container { flex-direction: column; gap: 10px; }
+            .nav-section { flex-wrap: wrap; justify-content: center; }
+            .pattern-controls { flex-direction: column; gap: 8px; }
+            .pattern-slider { width: 100px; }
+            .auto-draw-btn { padding: 5px 10px; font-size: 0.7rem; }
+            .auto-draw-toggle-btn { padding: 4px 10px; font-size: 0.68rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="toast" id="toast"></div>
+
+    <!-- Help Modal -->
+    <div class="help-modal-overlay" id="helpModal">
+        <div class="help-modal">
+            <div class="help-modal-header">
+                <h2>📚 Syllogiser - Help &amp; User Guide</h2>
+                <button class="help-modal-close" onclick="closeHelpModal()">×</button>
+            </div>
+            <div class="help-modal-content">
+                <div class="help-section">
+                    <h3>👋 Welcome</h3>
+                    <p>Welcome to <strong>Syllogiser</strong>! This educational platform helps you learn and understand categorical logic through interactive diagrams. Whether you're studying basic propositions or complex syllogistic arguments, this tool provides visual representations to enhance your understanding.</p>
+                    <p><strong>Syllogiser</strong> is unique in that it supports both <strong>Venn Diagrams</strong> and <strong>Euler Diagrams</strong>, making it a versatile tool for all your logical diagramming needs.</p>
+                </div>
+
+                <div class="help-section">
+                    <h3>⚙️ Settings</h3>
+                    <p>Customize the diagram display and terminology to suit your preference:</p>
+                    <div class="terminology-settings-box">
+                        <h4>📝 Custom Terminology</h4>
+                        <p>Customize the quantifier and copula terms used in the proposition tables:</p>
+                        <table class="terminology-table">
+                            <thead><tr><th>QUANTIFIER</th><th>COPULA</th></tr></thead>
+                            <tbody>
+                                <tr><td><div class="term-row"><span class="term-label">ALL:</span><input type="text" class="term-input" id="termAll" value="All" placeholder="All"></div></td><td><div class="term-row"><span class="term-label">ARE:</span><input type="text" class="term-input" id="termAre" value="are" placeholder="are"></div></td></tr>
+                                <tr><td><div class="term-row"><span class="term-label">SOME:</span><input type="text" class="term-input" id="termSome" value="Some" placeholder="Some"></div></td><td><div class="term-row"><span class="term-label">ARE NOT:</span><input type="text" class="term-input" id="termAreNot" value="are not" placeholder="are not"></div></td></tr>
+                                <tr><td><div class="term-row"><span class="term-label">NO:</span><input type="text" class="term-input" id="termNo" value="No" placeholder="No"></div></td><td><div class="term-row"><span class="term-label">IS:</span><input type="text" class="term-input" id="termIs" value="are" placeholder="are"></div></td></tr>
+                            </tbody>
+                        </table>
+                        <p class="terminology-note">💡 The "NO" quantifier and "IS" copula are used for the alternative E-type expression (e.g., "No S is P" instead of "All S are not P"). These terms are also used for CSV file parsing.</p>
+                        <button class="apply-terminology-btn" onclick="applyTerminology()">✓ Apply Terminology</button>
+                        <button class="reset-terminology-btn" onclick="resetTerminology()">↺ Reset to Default</button>
+                    </div>
+                    <div class="help-settings-box">
+                        <h4>📐 Venn Diagram Layout</h4>
+                        <p>Choose how the three circles are arranged in Syllogism Mode:</p>
+                        <div class="layout-options">
+                            <div class="layout-option selected" id="layoutUpright" onclick="setLayout('upright')"><div class="layout-diagram upright"><div class="circle s"></div><div class="circle p"></div><div class="circle m"></div></div><div class="layout-name">Upright</div><div class="layout-desc">Middle term (M) on top<br>S on left, P on right</div></div>
+                            <div class="layout-option" id="layoutInverted" onclick="setLayout('inverted')"><div class="layout-diagram inverted"><div class="circle s"></div><div class="circle p"></div><div class="circle m"></div></div><div class="layout-name">Inverted</div><div class="layout-desc">Middle term (M) on bottom<br>S on left, P on right</div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="help-section">
+                    <h3>📂 Data Loading</h3>
+                    <p>You can load datasets from CSV files to quickly navigate through multiple propositions or syllogisms.</p>
+                    <div class="help-data-box"><h4>🔄 How to Use Data Loading</h4><ol style="margin-left: 20px; color: #065f46; line-height: 1.8;"><li>Click the <strong>"📁 Load data"</strong> button at the top of the page</li><li>Select a CSV or TXT file from your computer</li><li>The data will be loaded based on the current mode (Statement or Syllogism)</li><li>Use the <strong>blue navigation bar</strong> to browse through loaded items</li><li>You can always manually edit any loaded data</li></ol></div>
+                    <div class="help-tip"><p><strong>Statement Mode CSV Format:</strong></p><ul style="margin-top: 8px; margin-left: 20px;"><li>Each line has 4 elements: <code>Quantifier,Subject,Copula,Predicate</code></li><li>Blocks are separated by at least one blank line</li><li>1 line = Premise only; 2 lines = Premise + Conclusion</li><li>Blocks with 3+ lines are ignored</li></ul></div>
+                    <div class="help-data-box"><h4>📄 Statement Mode Example</h4><div class="help-data-example">All,dogs,are,animals
+Some,cats,are not,friendly
+
+All,birds,are,animals
+
+No,fish,are,mammals
+Some,pets,are,fish</div></div>
+                    <div class="help-tip"><p><strong>Syllogism Mode CSV Format:</strong></p><ul style="margin-top: 8px; margin-left: 20px;"><li>Each line has 4 elements: <code>Quantifier,Subject,Copula,Predicate</code></li><li>Blocks are separated by at least one blank line</li><li>1 line = Premise 1 only; 2 lines = P1 + P2; 3 lines = P1 + P2 + Conclusion</li><li>Blocks with 4+ lines are ignored</li></ul></div>
+                    <div class="help-data-box"><h4>📄 Syllogism Mode Example</h4><div class="help-data-example">All,men,are,mortal
+All,Greeks,are,men
+All,Greeks,are,mortal
+
+No,reptiles,are,mammals
+All,snakes,are,reptiles
+
+Some,students,are,athletes
+All,athletes,are,healthy</div></div>
+                    <div class="help-warning"><p>⚠️ <strong>Important Parsing Rules:</strong></p><ul style="margin-top: 8px; margin-left: 20px;"><li>Quantifiers and Copulas must match the terms defined in Settings</li><li>Matching is <strong>case-insensitive</strong></li><li>Spaces within terms are <strong>ignored</strong></li><li>"No" quantifier with "are" copula maps to E-type</li><li>Invalid blocks are silently skipped</li></ul></div>
+                </div>
+
+                <div class="help-section">
+                    <h3>⭕ Euler Diagram Support</h3>
+                    <p><strong>Syllogiser</strong> is (probably) the only application that supports both <strong>Venn Diagrams</strong> and <strong>Euler Diagrams</strong> for syllogism visualization.</p>
+                    <div class="help-euler-box"><h4>🔄 How to Create Euler Diagrams</h4><p>Unlike Venn diagrams where all circles overlap in a fixed pattern, Euler diagrams allow you to <strong>resize and reposition circles</strong> to show actual set relationships:</p><ul><li><strong>Resize circles:</strong> Drag the edge of any circle to make it larger or smaller</li><li><strong>Move circles:</strong> Drag from the center of a circle to reposition it</li><li><strong>Show containment:</strong> Make one circle smaller and place it entirely inside another</li><li><strong>Show exclusion:</strong> Move circles apart so they don't overlap</li><li><strong>Show partial overlap:</strong> Position circles to overlap partially</li></ul><div class="help-euler-comparison"><div class="help-euler-item"><h5>Venn Diagram</h5><p>All possible intersections are shown. Empty regions are shaded to indicate they have no members. Fixed circle sizes and positions.</p></div><div class="help-euler-item"><h5>Euler Diagram</h5><p>Only actual relationships are shown. Circle size and position indicate set relationships directly. More intuitive for some users.</p></div></div></div>
+                    <div class="help-tip"><p>💡 <strong>Tip:</strong> Use <strong>Diagram 1</strong> for Euler diagrams and <strong>Diagram 2</strong> for Venn diagrams to compare both representations side by side!</p></div>
+                </div>
+
+                <div class="help-section">
+                    <h3>📏 Resizable Panels</h3>
+                    <p>You can adjust the size of the left and right panels to give yourself more space for diagramming:</p>
+                    <ul><li><strong>Drag the divider</strong> between the left panel (propositions) and right panel (diagrams) to resize</li><li><strong>Make the diagram larger</strong> by dragging the divider to the left</li><li><strong>Make the propositions panel larger</strong> by dragging the divider to the right</li><li><strong>Works with both mouse and touch</strong> - drag with your finger on mobile devices</li></ul>
+                    <div class="help-tip"><p>💡 <strong>Tip:</strong> For detailed diagram work, drag the divider far to the left to maximize your canvas space while still keeping the propositions visible.</p></div>
+                </div>
+
+                <div class="help-section">
+                    <h3>🔄 Two Operating Modes</h3>
+                    <p>The platform offers two modes accessible via the toggle switch at the top:</p>
+                    <ul><li><strong>Statement Mode:</strong> For analyzing single categorical propositions (A, E, I, O types) with two-circle diagrams</li><li><strong>Syllogism Mode:</strong> For analyzing categorical syllogisms with three-circle diagrams, including validity checking and formal proving</li></ul>
+                    <div class="help-tip"><p>💡 <strong>Tip:</strong> Start with Statement Mode to understand basic propositions before moving to Syllogism Mode.</p></div>
+                </div>
+
+                <div class="help-section">
+                    <h3>📝 Categorical Proposition Types</h3>
+                    <p>There are four standard forms of categorical propositions:</p>
+                    <table class="help-table"><thead><tr><th>Type</th><th>Name</th><th>Form</th><th>Subject</th><th>Predicate</th></tr></thead><tbody><tr><td><strong>A</strong></td><td>Universal Affirmative</td><td>All S are P</td><td>Distributed</td><td>Undistributed</td></tr><tr><td><strong>E</strong></td><td>Universal Negative</td><td>No S are P</td><td>Distributed</td><td>Distributed</td></tr><tr><td><strong>I</strong></td><td>Particular Affirmative</td><td>Some S are P</td><td>Undistributed</td><td>Undistributed</td></tr><tr><td><strong>O</strong></td><td>Particular Negative</td><td>Some S are not P</td><td>Undistributed</td><td>Distributed</td></tr></tbody></table>
+                    <p><strong>Distribution:</strong> A term is distributed when the proposition makes a claim about ALL members of that category. Badges show <span style="background:#dcfce7;padding:2px 6px;border-radius:3px;color:#166534;font-weight:bold;">D</span> for distributed and <span style="background:#fef3c7;padding:2px 6px;border-radius:3px;color:#92400e;font-weight:bold;">xD</span> for undistributed.</p>
+                    <div class="singular-note"><h4>📌 Note on Singular Propositions</h4><p>In traditional categorical syllogisms, a <strong>singular proposition</strong> (e.g., "Socrates is a man") is generally treated as a <strong>universal proposition</strong>. This is because a singular term refers to exactly one individual, and the proposition makes a claim about the entire extension of that term.</p></div>
+                </div>
+
+                <div class="help-section">
+                    <h3>📐 Syllogistic Figures</h3>
+                    <p>A syllogism's figure is determined by the position of the Middle Term (M) in the premises:</p>
+                    <table class="help-table"><thead><tr><th>Figure</th><th>Major Premise</th><th>Minor Premise</th><th>Pattern</th></tr></thead><tbody><tr><td><strong>Figure 1</strong></td><td>M - P</td><td>S - M</td><td>Middle is subject of major, predicate of minor</td></tr><tr><td><strong>Figure 2</strong></td><td>P - M</td><td>S - M</td><td>Middle is predicate of both</td></tr><tr><td><strong>Figure 3</strong></td><td>M - P</td><td>M - S</td><td>Middle is subject of both</td></tr><tr><td><strong>Figure 4</strong></td><td>P - M</td><td>M - S</td><td>Middle is predicate of major, subject of minor</td></tr></tbody></table>
+                </div>
+
+                <div class="help-section">
+                    <h3>🔗 Sorites (Chain Syllogisms)</h3>
+                    <p>A <strong>sorites</strong> (from Greek "heap") is an extended chain of syllogistic reasoning consisting of three or more premises that lead directly to a conclusion.</p>
+                    <div class="help-sorites-box"><h4>📖 Example of a Sorites</h4><div class="help-sorites-example"><div class="premise">1. All A are B</div><div class="premise">2. All B are C</div><div class="premise">3. All C are D</div><div class="premise">4. All D are E</div><div class="conclusion">∴ All A are E</div></div><p>This sorites contains three hidden syllogisms:</p><ul><li><strong>Syllogism 1:</strong> All A are B, All B are C → All A are C</li><li><strong>Syllogism 2:</strong> All A are C, All C are D → All A are D</li><li><strong>Syllogism 3:</strong> All A are D, All D are E → All A are E</li></ul></div>
+                    <h4>🛠️ Using the Platform for Sorites</h4>
+                    <div class="help-tip"><p><strong>In Statement Mode:</strong></p><ul style="margin-top: 8px; margin-left: 20px;"><li><strong>"Premise → Syllogism P1"</strong> - Copies the current statement to Premise 1</li><li><strong>"Premise → Syllogism P2"</strong> - Copies the current statement to Premise 2</li></ul></div>
+                    <div class="help-tip"><p><strong>In Syllogism Mode:</strong></p><ul style="margin-top: 8px; margin-left: 20px;"><li><strong>"Conclusion → P1"</strong> - Copies the conclusion to Premise 1, allowing you to chain syllogisms</li></ul></div>
+                    <div class="help-warning"><p>⚠️ <strong>Important:</strong> For a sorites to be valid, EVERY constituent syllogism must be valid.</p></div>
+                </div>
+
+                <div class="help-section">
+                    <h3>🎯 How to Use the Platform</h3>
+                    <h4>Step 1: Enter Propositions</h4><ul><li>In <strong>Statement Mode</strong>: Enter subject and predicate terms for a single premise</li><li>In <strong>Syllogism Mode</strong>: Enter terms for both premises (the system requires exactly 3 unique terms)</li><li>Select quantifiers (All/Some) and copulas (are/are not) from dropdowns</li><li>The conclusion terms are automatically populated from your premises</li></ul>
+                    <h4>Step 2: Select Conclusion Terms</h4><ul><li>Choose the subject and predicate for your conclusion from the dropdown menus</li><li>The system will automatically identify Major, Minor, and Middle terms</li></ul>
+                    <h4>Step 3: Check Validity (Syllogism Mode)</h4><ul><li>Click <strong>"Check Validity"</strong> to determine if your syllogism is valid</li><li>Results show the mood-figure code (e.g., AAA-1), traditional name (e.g., Barbara), and validity status</li><li>Green = Unconditionally Valid, Yellow = Conditionally Valid, Red = Invalid</li></ul>
+                    <h4>Step 4: Use the Proving Table</h4><ul><li>Manually test each validity rule by selecting YES/NO in the Answer column</li><li>Or click <strong>"System Proving"</strong> to have the system automatically check all rules</li></ul>
+                </div>
+
+                <div class="help-section">
+                    <h3>🎨 Using the Diagram Canvas</h3>
+                    <p>The diagram canvas supports both mouse/trackpad and touch/finger interactions:</p>
+                    <h4>🖱️ Desktop (Mouse/Trackpad)</h4><ul><li><strong>Click on <u>regions</u></strong> to color them with the selected color</li><li><strong>Drag circles from their <u>center</u></strong> to reposition them</li><li><strong>Drag circle <u>edges</u></strong> to resize circles</li><li><strong>Drag existence markers (X)</strong> to move them</li></ul>
+                    <h4>📱 Mobile/Tablet (Touch/Finger)</h4><ul><li><strong>Tap on <u>regions</u></strong> to color them</li><li><strong>Touch and drag circles from their <u>center</u></strong> to reposition</li><li><strong>Touch and drag circle <u>edges</u></strong> to resize</li><li><strong>Touch and drag existence markers (X)</strong> to move them</li><li><strong>Swipe across regions</strong> to paint multiple areas in one motion</li></ul>
+                    <h4>🎨 Color &amp; Pattern Settings</h4><ul><li><strong>Color palette:</strong> Select from 10 preset colors or use transparent/clear</li><li><strong>Overlay mode:</strong> When checked, new colors are layered on top of existing colors</li><li><strong>Transparency:</strong> Adjust from 0% (solid) to 100% (fully transparent)</li><li><strong>Stripe pattern:</strong> Enable stripes and adjust angle from 0° to 359°</li><li>Use <strong>"Clear All"</strong> to reset diagram colors only</li><li>Use <strong>"Reset Diagram"</strong> to reset circle positions, sizes, colors, and existence markers</li></ul>
+                    <div class="help-tip"><p>💡 <strong>Tip:</strong> Use Overlay mode with stripes to create cross-hatching patterns.</p></div>
+                    <div class="help-warning"><p>⚠️ <strong>Note:</strong> Diagram 1 and Diagram 2 are separate canvases. Changes to one do not affect the other.</p></div>
+                </div>
+
+                <!-- Auto-Diagramming Section -->
+                <div class="help-section">
+                    <h3>🤖 Auto-Diagramming</h3>
+                    <p>The <strong>Auto Draw</strong> feature automatically generates Venn diagram shadings and existence markers based on the propositions you have entered.</p>
+
+                    <div class="help-data-box">
+                        <h4>📍 Where to Find Auto Draw</h4>
+                        <p>The Auto Draw toolbar appears in the <strong>yellow-bordered bar</strong> on <strong>both</strong> Diagram 1 and Diagram 2. Each toolbar contains a <strong>Premises / Conclusion toggle</strong> that controls which set of buttons is active:</p>
+                        <ul style="margin-left: 20px; color: #065f46; line-height: 1.8;">
+                            <li><strong>Premises toggle:</strong> Enables P1, P2, and Both buttons; disables the Conclusion button</li>
+                            <li><strong>Conclusion toggle:</strong> Enables the Conclusion button; disables P1, P2, and Both buttons</li>
+                        </ul>
+                        <p>This means you can draw <strong>either premises or conclusion on any diagram</strong>, giving you full flexibility.</p>
+                    </div>
+
+                    <h4>🔘 Auto Draw Buttons Explained</h4>
+                    <div class="help-tip">
+                        <p><strong>Premise Buttons (active when "Premises" toggle is selected):</strong></p>
+                        <ul style="margin-top: 8px; margin-left: 20px;">
+                            <li><strong>P1</strong> — Draws Premise 1 only, using 45° stripe shading for universal propositions</li>
+                            <li><strong>P2</strong> — Draws Premise 2 only, using 135° stripe shading for universal propositions</li>
+                            <li><strong>P1 & P2</strong> — Draws both premises together with cross-hatching in overlapping shaded areas</li>
+                        </ul>
+                    </div>
+                    <div class="help-tip">
+                        <p><strong>Conclusion Button (active when "Conclusion" toggle is selected):</strong></p>
+                        <ul style="margin-top: 8px; margin-left: 20px;">
+                            <li><strong>Conclusion</strong> — Draws the conclusion proposition using 0° (horizontal) stripe shading</li>
+                        </ul>
+                    </div>
+
+                    <h4>📊 What Auto Draw Produces</h4>
+                    <table class="help-table"><thead><tr><th>Proposition Type</th><th>Diagram Action</th><th>Example</th></tr></thead><tbody><tr><td><strong>A</strong> (All S are P)</td><td>Shades the region(s) of S that are <em>outside</em> P</td><td>"All dogs are animals" → shade the dogs-only region</td></tr><tr><td><strong>E</strong> (No S are P)</td><td>Shades the overlapping region of S and P</td><td>"No cats are dogs" → shade the cats-and-dogs overlap</td></tr><tr><td><strong>I</strong> (Some S are P)</td><td>Places an <strong>X</strong> on the boundary of the S∩P region</td><td>"Some students are athletes" → X on the overlap boundary</td></tr><tr><td><strong>O</strong> (Some S are not P)</td><td>Places an <strong>X</strong> on the boundary of the S-only region</td><td>"Some birds are not flyers" → X on the birds-only boundary</td></tr></tbody></table>
+
+                    <div class="help-data-box">
+                        <h4>🎓 Pedagogical Use: Comparing Premises vs. Conclusion</h4>
+                        <p>A recommended workflow for teaching or learning syllogism validity through diagrams:</p>
+                        <ol style="margin-left: 20px; color: #065f46; line-height: 1.8;">
+                            <li>Enter all three propositions (two premises and a conclusion) in Syllogism Mode</li>
+                            <li>Go to <strong>Diagram 1</strong>, select the <strong>Premises</strong> toggle, and click <strong>"Both"</strong></li>
+                            <li>Go to <strong>Diagram 2</strong>, select the <strong>Conclusion</strong> toggle (default), and click <strong>"Conclusion"</strong></li>
+                            <li>Compare the two diagrams: if the conclusion's diagram is already entailed by the premises' diagram, the syllogism is valid</li>
+                        </ol>
+                        <p>Alternatively, you can draw both premises and conclusion on the <strong>same diagram</strong> by switching the toggle to compare them directly.</p>
+                    </div>
+
+                    <div class="help-warning"><p>⚠️ <strong>Note:</strong> Auto Draw works best with the standard Venn diagram layout (default circle positions and sizes). If you have moved or resized circles to create an Euler diagram, the auto-drawn shading will adapt to the current positions but may look different from a standard textbook Venn diagram.</p></div>
+                    <div class="help-tip"><p>💡 <strong>Tip:</strong> After auto-drawing, you can still manually adjust the diagram — add more shading, move existence markers, or overlay additional colours. Auto Draw gives you a starting point; manual editing lets you customize it further.</p></div>
+                </div>
+
+                <div class="help-section">
+                    <h3>✅ Syllogism Validity Rules</h3>
+                    <p>A valid syllogism must satisfy ALL of the following six fundamental rules:</p>
+                    <table class="help-table"><thead><tr><th>Rule</th><th>Requirement</th><th>Fallacy if Violated</th></tr></thead><tbody><tr><td><strong>Three Terms</strong></td><td>Exactly three distinct terms used consistently</td><td>Fallacy of Four Terms</td></tr><tr><td><strong>Middle Term Distribution</strong></td><td>Middle term must be distributed at least once</td><td>Undistributed Middle</td></tr><tr><td><strong>Conclusion Distribution</strong></td><td>Terms distributed in conclusion must be distributed in premises</td><td>Illicit Major/Minor</td></tr><tr><td><strong>Exclusive Premises</strong></td><td>Cannot have two negative premises</td><td>Fallacy of Exclusive Premises</td></tr><tr><td><strong>Negative Matches</strong></td><td>Negative premise requires negative conclusion; affirmative premises require affirmative conclusion</td><td>Drawing wrong quality conclusion</td></tr><tr><td><strong>Existential Rule</strong></td><td>Particular conclusion from universal premises requires existential assumption</td><td>Existential Fallacy</td></tr></tbody></table>
+                    <div class="help-subsection"><h4>⚡ Why Only 6 Rules? Understanding Derived Shortcuts</h4><p>You may have encountered two additional "rules" in some textbooks. These are actually <strong>shortcuts derived from the 6 fundamental rules</strong> above.</p><table class="help-table-shortcut"><thead><tr><th>Shortcut Rule</th><th>What It Says</th><th>Why It's Not Fundamental</th></tr></thead><tbody><tr><td><strong>Two Particulars Rule</strong></td><td>If both premises start with "Some...", no valid conclusion can follow.</td><td>Two "Some" statements never provide enough distribution. Will trigger <strong>Undistributed Middle</strong> or <strong>Illicit Process</strong>.</td></tr><tr><td><strong>Particular Conclusion Corollary</strong></td><td>If one premise is Particular, your conclusion must also be Particular.</td><td>Will be caught as <strong>Illicit Major</strong> or <strong>Illicit Minor</strong>.</td></tr></tbody></table><div class="help-derivation-box"><p><strong>💡 Key Insight:</strong> These shortcuts are useful for quickly spotting invalid arguments, but the 6 fundamental rules tell you <em>precisely what went wrong</em>.</p></div></div>
+                </div>
+
+                <div class="help-section">
+                    <h3>🔎 Web Search Feature</h3>
+                    <p>The Web Search section allows you to quickly search for more information about syllogistic forms:</p>
+                    <ul><li>The search query automatically updates based on the current validity check result</li><li>Click <strong>"Search"</strong> to open a Google search in a new tab</li><li>You can modify the search query before searching</li></ul>
+                </div>
+
+                <div class="help-section">
+                    <h3>⌨️ Tips &amp; Best Practices</h3>
+                    <ul><li>Use consistent terminology when entering terms (case-insensitive)</li><li>The system automatically detects E-type propositions and shows the alternative "No S is P" notation</li><li>Resize the left panel by dragging the divider for more workspace</li><li>Use the Reset button to clear all inputs and start fresh (each mode has independent reset)</li><li>Check the Knowledge Table at the bottom for quick reference to proposition types and figures</li><li><strong>On mobile devices:</strong> Use landscape orientation for better diagram visibility</li></ul>
+                </div>
+
+                <div class="help-section">
+                    <h3>ℹ️ About</h3>
+                    <div class="help-credits">
+                        <div class="help-credits-grid">
+                            <div class="help-credit-item"><div class="label">Designer</div><div class="value">LAM Wai Ip 林葦葉 (HKU)</div></div>
+                            <div class="help-credit-item"><div class="label">Developer</div><div class="value">Claude-Opus 4.5 &amp; 4.6 (Anthropic)</div></div>
+                            <div class="help-credit-item"><div class="label">Date</div><div class="value">March 7, 2025</div></div>
+                            <div class="help-credit-item"><div class="label">Version</div><div class="value">45</div></div>
+                        </div>
+                        <div class="help-license"><h4>📜 License &amp; Citation</h4><p>This application is provided free of charge for educational and research purposes.</p><p>If you use this application in your research or teaching, please cite:</p><div class="help-citation">Lam, W. I. (2025). Syllogiser: A Venn and Euler Diagram Tool for Categorical Logic.</div></div>
+                        <div class="help-contact"><h4>📧 Feedback &amp; Support</h4><p>For questions, bug reports, feature requests, or collaboration opportunities, please contact:</p><p>📧 Official Website: <a href="https://web.edu.hku.hk/faculty-academics/jwilam" target="_blank">web.edu.hku.hk/faculty-academics/jwilam</a></p><p>📧 Official Email: <a href="mailto:jwilam@hku.hk">jwilam@hku.hk</a></p><p>📧 Personal Website: <a href="https://jwilam.com" target="_blank">jwilam.com</a></p><p>📧 Personal Email: <a href="mailto:jwilam@gmail.com">jwilam@gmail.com</a></p><p style="margin-top: 12px; color: #64748b; font-style: italic;">We welcome your feedback to improve this platform!</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="left-panel" id="leftPanel">
+            <div class="title-container">
+                <h1>Syllogiser - Statement &amp; Syllogism Visualiser</h1>
+                <button class="help-btn" onclick="openHelpModal()">❓ Help</button>
+            </div>
+            
+            <div class="mode-control-container">
+                <div class="upload-section">
+                    <label class="upload-btn" id="uploadBtn">📁 Load data
+                        <input type="file" id="csvFileInput" accept=".csv,.txt" onchange="handleFileUpload(event)">
+                    </label>
+                </div>
+                <div class="divider-vertical"></div>
+                <div class="mode-toggle-container">
+                    <span class="mode-label" id="statementLabel">Statement</span>
+                    <div class="mode-toggle" id="modeToggle" onclick="toggleMode()">
+                        <div class="mode-toggle-slider"></div>
+                    </div>
+                    <span class="mode-label active" id="syllogismLabel">Syllogism</span>
+                </div>
+            </div>
+
+            <div class="header-row" id="syllogismHeader">
+                <div class="header-left">
+                    <h2>Propositions</h2>
+                    <div class="nav-section">
+                        <button class="nav-btn" id="navPrev" onclick="navigatePrev()" disabled>&lt;</button>
+                        <span class="nav-position"><span id="navCurrent">0</span>/<span id="navTotal">0</span></span>
+                        <button class="nav-btn" id="navNext" onclick="navigateNext()" disabled>&gt;</button>
+                        <div class="nav-goto"><input type="text" id="navGotoInput" placeholder="#"><button class="nav-go-btn" onclick="navigateGoto()">Go</button></div>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="reset-btn" onclick="resetSyllogism()">🔄 Reset</button>
+                    <button class="copy-btn green" onclick="copyConclusionToPremise1()">📋 Conclusion → P1</button>
+                </div>
+            </div>
+
+            <div class="header-row hidden" id="statementHeader">
+                <div class="header-left">
+                    <h2>Propositions</h2>
+                    <div class="nav-section">
+                        <button class="nav-btn" id="navPrevStatement" onclick="navigatePrev()" disabled>&lt;</button>
+                        <span class="nav-position"><span id="navCurrentStatement">0</span>/<span id="navTotalStatement">0</span></span>
+                        <button class="nav-btn" id="navNextStatement" onclick="navigateNext()" disabled>&gt;</button>
+                        <div class="nav-goto"><input type="text" id="navGotoInputStatement" placeholder="#"><button class="nav-go-btn" onclick="navigateGotoStatement()">Go</button></div>
+                    </div>
+                </div>
+                <div class="button-group">
+                    <button class="reset-btn" onclick="resetStatement()">🔄 Reset</button>
+                    <button class="copy-btn" onclick="copyToPremise1()">📋 Premise → Syllogism P1</button>
+                    <button class="copy-btn" onclick="copyToPremise2()">📋 Premise → Syllogism P2</button>
+                </div>
+            </div>
+            
+            <table class="proposition-table" id="syllogismTable">
+                <thead><tr><th>TERM</th><th>QUANTIFIER</th><th>SUBJECT</th><th>COPULA</th><th>PREDICATE</th></tr></thead>
+                <tbody>
+                    <tr id="premise1Row"><td><span class="term-label" id="premise1Label">PREMISE 1</span></td><td class="quantifier-cell"><select id="premise1Quantifier" onchange="handleQuantifierCopulaChange()"><option value="All">All</option><option value="Some">Some</option></select><span class="alternative-quantifier" id="premise1AltQuantifier"></span></td><td class="term-cell"><input type="text" id="premise1Subject" placeholder="e.g., men" oninput="handlePremiseInput()"><span class="distribution-badge" id="premise1SubjectDist"></span></td><td class="copula-cell"><select id="premise1Copula" onchange="handleQuantifierCopulaChange()"><option value="are">are</option><option value="are not">are not</option></select><span class="alternative-expression" id="premise1AltCopula"></span></td><td class="term-cell"><input type="text" id="premise1Predicate" placeholder="e.g., mortal" oninput="handlePremiseInput()"><span class="distribution-badge" id="premise1PredicateDist"></span></td></tr>
+                    <tr id="premise2Row"><td><span class="term-label" id="premise2Label">PREMISE 2</span></td><td class="quantifier-cell"><select id="premise2Quantifier" onchange="handleQuantifierCopulaChange()"><option value="All">All</option><option value="Some">Some</option></select><span class="alternative-quantifier" id="premise2AltQuantifier"></span></td><td class="term-cell"><input type="text" id="premise2Subject" placeholder="e.g., Greeks" oninput="handlePremiseInput()"><span class="distribution-badge" id="premise2SubjectDist"></span></td><td class="copula-cell"><select id="premise2Copula" onchange="handleQuantifierCopulaChange()"><option value="are">are</option><option value="are not">are not</option></select><span class="alternative-expression" id="premise2AltCopula"></span></td><td class="term-cell"><input type="text" id="premise2Predicate" placeholder="e.g., men" oninput="handlePremiseInput()"><span class="distribution-badge" id="premise2PredicateDist"></span></td></tr>
+                    <tr id="conclusionRowSyllogism"><td>CONCLUSION</td><td class="quantifier-cell"><select id="conclusionQuantifier" onchange="handleQuantifierCopulaChange()"><option value="All">All</option><option value="Some">Some</option></select><span class="alternative-quantifier" id="conclusionAltQuantifier"></span></td><td class="term-cell"><select id="conclusionSubject" onchange="handleConclusionChange()"><option value="">Select...</option></select><span class="distribution-badge" id="conclusionSubjectDist"></span></td><td class="copula-cell"><select id="conclusionCopula" onchange="handleQuantifierCopulaChange()"><option value="are">are</option><option value="are not">are not</option></select><span class="alternative-expression" id="conclusionAltCopula"></span></td><td class="term-cell"><select id="conclusionPredicate" onchange="handleConclusionChange()"><option value="">Select...</option></select><span class="distribution-badge" id="conclusionPredicateDist"></span></td></tr>
+                </tbody>
+            </table>
+
+            <table class="proposition-table statement-mode hidden" id="statementTable">
+                <thead><tr><th>TERM</th><th>QUANTIFIER</th><th>SUBJECT</th><th>COPULA</th><th>PREDICATE</th></tr></thead>
+                <tbody>
+                    <tr id="statementPremiseRow"><td>PREMISE</td><td class="quantifier-cell"><select id="statementPremiseQuantifier" onchange="handleStatementChange()"><option value="All">All</option><option value="Some">Some</option></select><span class="alternative-quantifier" id="statementPremiseAltQuantifier"></span></td><td class="term-cell"><input type="text" id="statementPremiseSubject" placeholder="e.g., dogs" oninput="handleStatementChange()"><span class="distribution-badge" id="statementPremiseSubjectDist"></span></td><td class="copula-cell"><select id="statementPremiseCopula" onchange="handleStatementChange()"><option value="are">are</option><option value="are not">are not</option></select><span class="alternative-expression" id="statementPremiseAltCopula"></span></td><td class="term-cell"><input type="text" id="statementPremisePredicate" placeholder="e.g., animals" oninput="handleStatementChange()"><span class="distribution-badge" id="statementPremisePredicateDist"></span></td></tr>
+                    <tr id="statementConclusionRow"><td>CONCLUSION</td><td class="quantifier-cell"><select id="statementConclusionQuantifier" onchange="handleStatementChange()"><option value="All">All</option><option value="Some">Some</option></select><span class="alternative-quantifier" id="statementConclusionAltQuantifier"></span></td><td class="term-cell"><select id="statementConclusionSubject" onchange="handleStatementChange()"><option value="">Select...</option></select><span class="distribution-badge" id="statementConclusionSubjectDist"></span></td><td class="copula-cell"><select id="statementConclusionCopula" onchange="handleStatementChange()"><option value="are">are</option><option value="are not">are not</option></select><span class="alternative-expression" id="statementConclusionAltCopula"></span></td><td class="term-cell"><select id="statementConclusionPredicate" onchange="handleStatementChange()"><option value="">Select...</option></select><span class="distribution-badge" id="statementConclusionPredicateDist"></span></td></tr>
+                </tbody>
+            </table>
+
+            <div class="warning-box" id="warningBox"><h4>⚠️ Validation Warnings</h4><ul id="warningList"></ul></div>
+            <div class="validation-success" id="successBox">✓ All validation rules passed.</div>
+
+            <div class="type-display" id="syllogismTypeDisplay">
+                <div class="type-item"><div class="type-label" id="majorTypeLabel">Premise 1 Type</div><div class="type-value" id="premise1Type">A</div></div>
+                <div class="type-item"><div class="type-label" id="minorTypeLabel">Premise 2 Type</div><div class="type-value" id="premise2Type">A</div></div>
+                <div class="type-item"><div class="type-label">Conclusion Type</div><div class="type-value" id="conclusionType">A</div></div>
+            </div>
+
+            <div class="type-display statement-mode hidden" id="statementTypeDisplay">
+                <div class="type-item"><div class="type-label">Premise Type</div><div class="type-value" id="statementPremiseType">A</div></div>
+                <div class="type-item"><div class="type-label">Conclusion Type</div><div class="type-value" id="statementConclusionType">A</div></div>
+            </div>
+
+            <div id="syllogismOnlySection">
+                <button class="check-validity-btn" id="checkValidityBtn">🔍 Check Validity</button>
+                <div class="validity-display pending" id="validityDisplay">
+                    <div class="validity-form-code" id="validityFormCode">?</div>
+                    <div class="validity-name" id="validityName">Is it Valid?</div>
+                    <div class="validity-badge" id="validityBadge">Click to Check</div>
+                    <div class="validity-note" id="validityNote">Fill in the syllogism and click "Check Validity".</div>
+                </div>
+                <div class="proving-section">
+                    <h3>📋 Proving</h3>
+                    <table class="proving-table">
+                        <thead><tr><th>Rules</th><th>Proof</th><th>Answer</th><th>Fallacy for NO</th></tr></thead>
+                        <tbody>
+                            <tr><td>Three Terms</td><td>Does the argument have exactly three distinct terms?</td><td><select id="proofThreeTerms" onchange="updateFallacyDisplay('threeTerms')"><option value="">--</option><option value="YES">YES</option><option value="NO">NO</option></select></td><td><span class="fallacy-text" id="fallacyThreeTerms">Fallacy of Four Terms</span></td></tr>
+                            <tr><td>Middle Term Distribution</td><td>Is the Middle Term distributed in at least one premise?</td><td><select id="proofMiddleTerm" onchange="updateFallacyDisplay('middleTerm')"><option value="">--</option><option value="YES">YES</option><option value="NO">NO</option></select></td><td><span class="fallacy-text" id="fallacyMiddleTerm">Undistributed Middle</span></td></tr>
+                            <tr><td>Conclusion Distribution</td><td>If a term is distributed in conclusion, was it distributed in premise?</td><td><select id="proofConclusionDist" onchange="updateFallacyDisplay('conclusionDist')"><option value="">--</option><option value="YES">YES</option><option value="NO">NO</option></select></td><td><span class="fallacy-text" id="fallacyConclusionDist">Illicit Major or Illicit Minor</span></td></tr>
+                            <tr><td>Exclusive Premises</td><td>Are the premises NOT both negative?</td><td><select id="proofAffirmative" onchange="updateFallacyDisplay('affirmative')"><option value="">--</option><option value="YES">YES</option><option value="NO">NO</option></select></td><td><span class="fallacy-text" id="fallacyAffirmative">Fallacy of Exclusive Premises</span></td></tr>
+                            <tr><td>Negative Matches</td><td>Does conclusion quality match premises?</td><td><select id="proofNegative" onchange="updateFallacyDisplay('negative')"><option value="">--</option><option value="YES">YES</option><option value="NO">NO</option></select></td><td><span class="fallacy-text" id="fallacyNegative">Drawing wrong quality conclusion</span></td></tr>
+                            <tr><td>Existential Rule</td><td>If conclusion is particular, is there a particular premise?</td><td><select id="proofExistential" onchange="updateFallacyDisplay('existential')"><option value="">--</option><option value="YES">YES</option><option value="NO">NO</option></select></td><td><span class="fallacy-text" id="fallacyExistential">Existential Fallacy</span></td></tr>
+                        </tbody>
+                    </table>
+                    <button class="system-proving-btn" id="systemProvingBtn" onclick="systemProving()">🤖 System Proving</button>
+                </div>
+                <div class="search-section">
+                    <h3>🔎 Web Search</h3>
+                    <div class="search-container">
+                        <input type="text" class="search-input" id="searchInput" value="Is AAA-1 valid in syllogism? Please give me examples.">
+                        <button class="search-btn" onclick="performWebSearch()">🌐 Search</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Syllogism Knowledge Table -->
+            <table class="knowledge-table" id="knowledgeTable">
+                <thead>
+                    <tr>
+                        <th>Proposition Types</th>
+                        <th>Syllogistic Figures</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="knowledge-item"><strong>A</strong> (Universal Affirmative):<br>All S are P<br><em>S: Distributed, P: Undistributed</em></div>
+                            <div class="knowledge-item"><strong>E</strong> (Universal Negative):<br>No S are P<br><em>S: Distributed, P: Distributed</em></div>
+                            <div class="knowledge-item"><strong>I</strong> (Particular Affirmative):<br>Some S are P<br><em>S: Undistributed, P: Undistributed</em></div>
+                            <div class="knowledge-item"><strong>O</strong> (Particular Negative):<br>Some S are not P<br><em>S: Undistributed, P: Distributed</em></div>
+                        </td>
+                        <td>
+                            <div class="figure-title">Figure 1:</div>
+                            <div class="knowledge-item">Middle term is subject of major premise and predicate of minor premise.<br>Pattern: <span class="figure-pattern">M-P, S-M</span></div>
+                            
+                            <div class="figure-title">Figure 2:</div>
+                            <div class="knowledge-item">Middle term is predicate of both premises.<br>Pattern: <span class="figure-pattern">P-M, S-M</span></div>
+                            
+                            <div class="figure-title">Figure 3:</div>
+                            <div class="knowledge-item">Middle term is subject of both premises.<br>Pattern: <span class="figure-pattern">M-P, M-S</span></div>
+                            
+                            <div class="figure-title">Figure 4:</div>
+                            <div class="knowledge-item">Middle term is predicate of major premise and subject of minor premise.<br>Pattern: <span class="figure-pattern">P-M, M-S</span></div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <!-- Statement Proposition Types Info Table -->
+            <table class="proposition-types-info hidden" id="statementKnowledgeTable">
+                <thead>
+                    <tr>
+                        <th>Proposition Types</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <div class="knowledge-item"><strong>A</strong> (Universal Affirmative):<br>All S are P<br><em>S: Distributed, P: Undistributed</em></div>
+                            <div class="knowledge-item"><strong>E</strong> (Universal Negative):<br>No S are P<br><em>S: Distributed, P: Distributed</em></div>
+                            <div class="knowledge-item"><strong>I</strong> (Particular Affirmative):<br>Some S are P<br><em>S: Undistributed, P: Undistributed</em></div>
+                            <div class="knowledge-item"><strong>O</strong> (Particular Negative):<br>Some S are not P<br><em>S: Undistributed, P: Distributed</em></div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="resizer" id="resizer"></div>
+
+        <div class="right-panel" id="rightPanel">
+            <div class="tab-container">
+                <button class="tab-btn premises active" onclick="switchTab('premises')" id="premisesTabBtn"><span class="tab-icon">📐</span><span id="premisesTabLabel">Diagram 1 (e.g. Premises)</span></button>
+                <button class="tab-btn conclusion" onclick="switchTab('conclusion')"><span class="tab-icon">🎯</span>Diagram 2 (e.g. Conclusion)</button>
+            </div>
+
+            <!-- ============ PREMISES TAB (Diagram 1) ============ -->
+            <div class="tab-content active" id="premisesTab">
+                <div class="toolbar">
+                    <div class="toolbar-row">
+                        <div class="color-palette" id="colorPalettePremises">
+                            <button class="color-btn selected" style="background: #3b82f6;" data-color="#3b82f6" onclick="selectColor(this, 'premises')" title="Blue"></button>
+                            <button class="color-btn" style="background: #ef4444;" data-color="#ef4444" onclick="selectColor(this, 'premises')" title="Red"></button>
+                            <button class="color-btn" style="background: #22c55e;" data-color="#22c55e" onclick="selectColor(this, 'premises')" title="Green"></button>
+                            <button class="color-btn" style="background: #f59e0b;" data-color="#f59e0b" onclick="selectColor(this, 'premises')" title="Amber"></button>
+                            <button class="color-btn" style="background: #8b5cf6;" data-color="#8b5cf6" onclick="selectColor(this, 'premises')" title="Purple"></button>
+                            <button class="color-btn" style="background: #06b6d4;" data-color="#06b6d4" onclick="selectColor(this, 'premises')" title="Cyan"></button>
+                            <button class="color-btn" style="background: #ec4899;" data-color="#ec4899" onclick="selectColor(this, 'premises')" title="Pink"></button>
+                            <button class="color-btn" style="background: #000000;" data-color="#000000" onclick="selectColor(this, 'premises')" title="Black"></button>
+                            <button class="color-btn" style="background: #6b7280;" data-color="#6b7280" onclick="selectColor(this, 'premises')" title="Grey"></button>
+                            <button class="color-btn" style="background: #ffffff; border: 2px solid #ccc;" data-color="transparent" onclick="selectColor(this, 'premises')" title="White/Clear"></button>
+                            <button class="clear-btn" onclick="clearColors('premises')">Clear All</button>
+                            <button class="reset-diagram-btn" onclick="resetDiagram('premises')">Reset Diagram</button>
+                        </div>
+                    </div>
+                    <div class="toolbar-row">
+                        <div class="pattern-controls">
+                            <div class="pattern-control-group"><span class="pattern-control-label">Overlay:</span><input type="checkbox" class="pattern-checkbox" id="overlayCheckboxPremises" onchange="updateOverlay('premises')"></div>
+                            <div class="divider"></div>
+                            <div class="pattern-control-group"><span class="pattern-control-label">Transparency:</span><input type="range" class="pattern-slider" id="transparencySliderPremises" min="0" max="100" value="0" oninput="updateTransparency('premises', this.value)"><span class="pattern-value" id="transparencyValuePremises">0%</span></div>
+                            <div class="divider"></div>
+                            <div class="pattern-control-group"><span class="pattern-control-label">Stripes:</span><input type="checkbox" class="pattern-checkbox" id="stripesCheckboxPremises" onchange="updateStripes('premises')"><span class="pattern-control-label">Angle:</span><input type="range" class="pattern-slider" id="stripeAngleSliderPremises" min="0" max="359" value="45" oninput="updateStripeAngle('premises', this.value)" disabled><span class="pattern-value" id="stripeAngleValuePremises">45°</span></div>
+                            <canvas class="pattern-preview" id="patternPreviewPremises" width="40" height="24"></canvas>
+                        </div>
+                    </div>
+                    <div class="toolbar-row">
+                        <div class="toolbar-section">
+                            <button class="toolbar-btn" onclick="addExistence('premises')">Add Existence</button>
+                            <button class="toolbar-btn danger" onclick="clearExistence('premises')">Clear Existence</button>
+                        </div>
+                        <div class="divider"></div>
+                        <div class="toggle-container">
+                            <div class="toggle-switch" id="logicTogglePremises" onclick="toggleLogic('premises')">
+                                <div class="toggle-slider" id="toggleSliderPremises">Boolean</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- ===== Auto Draw Row for Diagram 1 ===== -->
+                    <!-- ===== Auto Draw Row for Diagram 1 ===== -->
+                    <div class="toolbar-row">
+                        <div class="auto-draw-section">
+                            <span class="auto-draw-label">Auto Draw:</span>
+                            <div class="auto-draw-toggle" id="autoDrawTogglePremises">
+                                <button class="auto-draw-toggle-btn active" data-mode="premises" onclick="setAutoDrawMode('premises','premises')">Premises</button>
+                                <button class="auto-draw-toggle-btn" data-mode="conclusion" onclick="setAutoDrawMode('conclusion','premises')">Conclusion</button>
+                            </div>
+                            <button class="auto-draw-btn p1" id="autoDrawP1BtnPremises" onclick="autoDrawPremise(1, 'premises')" title="Auto-draw Premise 1">🤖 P1</button>
+                            <button class="auto-draw-btn p2" id="autoDrawP2BtnPremises" onclick="autoDrawPremise(2, 'premises')" title="Auto-draw Premise 2">🤖 P2</button>
+                            <button class="auto-draw-btn both-premises" id="autoDrawBothBtnPremises" onclick="autoDrawBoth('premises')" title="Auto-draw both premises">🤖 P1 &amp; P2</button>
+                            <button class="auto-draw-btn concl" id="autoDrawConclusionBtnPremises" onclick="autoDrawConclusion('premises')" title="Auto-draw conclusion" disabled>🤖 Conclusion</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="canvas-container"><canvas id="vennCanvasPremises" class="venn-canvas"></canvas></div>
+            </div>
+
+            <!-- ============ CONCLUSION TAB (Diagram 2) ============ -->
+            <div class="tab-content" id="conclusionTab">
+                <div class="toolbar">
+                    <div class="toolbar-row">
+                        <div class="color-palette" id="colorPaletteConclusion">
+                            <button class="color-btn selected" style="background: #3b82f6;" data-color="#3b82f6" onclick="selectColor(this, 'conclusion')" title="Blue"></button>
+                            <button class="color-btn" style="background: #ef4444;" data-color="#ef4444" onclick="selectColor(this, 'conclusion')" title="Red"></button>
+                            <button class="color-btn" style="background: #22c55e;" data-color="#22c55e" onclick="selectColor(this, 'conclusion')" title="Green"></button>
+                            <button class="color-btn" style="background: #f59e0b;" data-color="#f59e0b" onclick="selectColor(this, 'conclusion')" title="Amber"></button>
+                            <button class="color-btn" style="background: #8b5cf6;" data-color="#8b5cf6" onclick="selectColor(this, 'conclusion')" title="Purple"></button>
+                            <button class="color-btn" style="background: #06b6d4;" data-color="#06b6d4" onclick="selectColor(this, 'conclusion')" title="Cyan"></button>
+                            <button class="color-btn" style="background: #ec4899;" data-color="#ec4899" onclick="selectColor(this, 'conclusion')" title="Pink"></button>
+                            <button class="color-btn" style="background: #000000;" data-color="#000000" onclick="selectColor(this, 'conclusion')" title="Black"></button>
+                            <button class="color-btn" style="background: #6b7280;" data-color="#6b7280" onclick="selectColor(this, 'conclusion')" title="Grey"></button>
+                            <button class="color-btn" style="background: #ffffff; border: 2px solid #ccc;" data-color="transparent" onclick="selectColor(this, 'conclusion')" title="White/Clear"></button>
+                            <button class="clear-btn" onclick="clearColors('conclusion')">Clear All</button>
+                            <button class="reset-diagram-btn" onclick="resetDiagram('conclusion')">Reset Diagram</button>
+                        </div>
+                    </div>
+                    <div class="toolbar-row">
+                        <div class="pattern-controls">
+                            <div class="pattern-control-group"><span class="pattern-control-label">Overlay:</span><input type="checkbox" class="pattern-checkbox" id="overlayCheckboxConclusion" onchange="updateOverlay('conclusion')"></div>
+                            <div class="divider"></div>
+                            <div class="pattern-control-group"><span class="pattern-control-label">Transparency:</span><input type="range" class="pattern-slider" id="transparencySliderConclusion" min="0" max="100" value="0" oninput="updateTransparency('conclusion', this.value)"><span class="pattern-value" id="transparencyValueConclusion">0%</span></div>
+                            <div class="divider"></div>
+                            <div class="pattern-control-group"><span class="pattern-control-label">Stripes:</span><input type="checkbox" class="pattern-checkbox" id="stripesCheckboxConclusion" onchange="updateStripes('conclusion')"><span class="pattern-control-label">Angle:</span><input type="range" class="pattern-slider" id="stripeAngleSliderConclusion" min="0" max="359" value="45" oninput="updateStripeAngle('conclusion', this.value)" disabled><span class="pattern-value" id="stripeAngleValueConclusion">45°</span></div>
+                            <canvas class="pattern-preview" id="patternPreviewConclusion" width="40" height="24"></canvas>
+                        </div>
+                    </div>
+                    <div class="toolbar-row">
+                        <div class="toolbar-section">
+                            <button class="toolbar-btn" onclick="addExistence('conclusion')">Add Existence</button>
+                            <button class="toolbar-btn danger" onclick="clearExistence('conclusion')">Clear Existence</button>
+                        </div>
+                        <div class="divider"></div>
+                        <div class="toggle-container">
+                            <div class="toggle-switch" id="logicToggleConclusion" onclick="toggleLogic('conclusion')">
+                                <div class="toggle-slider" id="toggleSliderConclusion">Boolean</div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- ===== Auto Draw Row for Diagram 2 ===== -->
+                    <!-- ===== Auto Draw Row for Diagram 2 ===== -->
+                    <div class="toolbar-row">
+                        <div class="auto-draw-section">
+                            <span class="auto-draw-label">Auto Draw:</span>
+                            <div class="auto-draw-toggle" id="autoDrawToggleConclusion">
+                                <button class="auto-draw-toggle-btn" data-mode="premises" onclick="setAutoDrawMode('premises','conclusion')">Premises</button>
+                                <button class="auto-draw-toggle-btn active" data-mode="conclusion" onclick="setAutoDrawMode('conclusion','conclusion')">Conclusion</button>
+                            </div>
+                            <button class="auto-draw-btn p1" id="autoDrawP1BtnConclusion" onclick="autoDrawPremise(1, 'conclusion')" title="Auto-draw Premise 1" disabled>🤖 P1</button>
+                            <button class="auto-draw-btn p2" id="autoDrawP2BtnConclusion" onclick="autoDrawPremise(2, 'conclusion')" title="Auto-draw Premise 2" disabled>🤖 P2</button>
+                            <button class="auto-draw-btn both-premises" id="autoDrawBothBtnConclusion" onclick="autoDrawBoth('conclusion')" title="Auto-draw both premises" disabled>🤖 P1 &amp; P2</button>
+                            <button class="auto-draw-btn concl" id="autoDrawConclusionBtnConclusion" onclick="autoDrawConclusion('conclusion')" title="Auto-draw conclusion">🤖 Conclusion</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="canvas-container"><canvas id="vennCanvasConclusion" class="venn-canvas"></canvas></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // CUSTOM TERMINOLOGY SETTINGS
+        // ============================================
+        let customTerms = { all: 'All', some: 'Some', are: 'are', areNot: 'are not', no: 'No', is: 'are' };
+
+        function applyTerminology() {
+            customTerms.all = document.getElementById('termAll').value || 'All';
+            customTerms.some = document.getElementById('termSome').value || 'Some';
+            customTerms.are = document.getElementById('termAre').value || 'are';
+            customTerms.areNot = document.getElementById('termAreNot').value || 'are not';
+            customTerms.no = document.getElementById('termNo').value || 'No';
+            customTerms.is = document.getElementById('termIs').value || 'are';
+            updateAllSelectOptions();
+            updateAlternativeExpressions();
+            showToast('Terminology applied successfully!', 'success');
+        }
+        
+        function resetTerminology() {
+            customTerms = { all: 'All', some: 'Some', are: 'are', areNot: 'are not', no: 'No', is: 'are' };
+            document.getElementById('termAll').value = 'All';
+            document.getElementById('termSome').value = 'Some';
+            document.getElementById('termAre').value = 'are';
+            document.getElementById('termAreNot').value = 'are not';
+            document.getElementById('termNo').value = 'No';
+            document.getElementById('termIs').value = 'are';
+            updateAllSelectOptions();
+            updateAlternativeExpressions();
+            showToast('Terminology reset to defaults', 'info');
+        }
+        
+        function updateAllSelectOptions() {
+            ['premise1Quantifier','premise2Quantifier','conclusionQuantifier','statementPremiseQuantifier','statementConclusionQuantifier'].forEach(id => {
+                const s = document.getElementById(id); if (!s) return;
+                const v = s.value;
+                s.innerHTML = `<option value="All">${customTerms.all}</option><option value="Some">${customTerms.some}</option>`;
+                s.value = v;
+            });
+            ['premise1Copula','premise2Copula','conclusionCopula','statementPremiseCopula','statementConclusionCopula'].forEach(id => {
+                const s = document.getElementById(id); if (!s) return;
+                const v = s.value;
+                s.innerHTML = `<option value="are">${customTerms.are}</option><option value="are not">${customTerms.areNot}</option>`;
+                s.value = v;
+            });
+        }
+
+        // ============================================
+        // CSV DATA LOADING
+        // ============================================
+        let statementDataset = [], syllogismDataset = [], currentDataIndex = 0;
+
+        function normalizeTermForComparison(term) { return term.replace(/\s+/g, '').toLowerCase(); }
+
+        function parseQuantifier(value) {
+            const n = normalizeTermForComparison(value);
+            if (n === normalizeTermForComparison(customTerms.all)) return 'All';
+            if (n === normalizeTermForComparison(customTerms.some)) return 'Some';
+            if (n === normalizeTermForComparison(customTerms.no)) return 'All';
+            return null;
+        }
+
+        function parseCopula(value, quantifierRaw) {
+            const n = normalizeTermForComparison(value);
+            const qn = normalizeTermForComparison(quantifierRaw);
+            if (qn === normalizeTermForComparison(customTerms.no)) {
+                if (n === normalizeTermForComparison(customTerms.are) || n === normalizeTermForComparison(customTerms.is)) return 'are not';
+                return null;
+            }
+            if (n === normalizeTermForComparison(customTerms.are)) return 'are';
+            if (n === normalizeTermForComparison(customTerms.areNot)) return 'are not';
+            return null;
+        }
+
+        function parseLine(line) {
+            const p = line.split(','); if (p.length !== 4) return null;
+            const rq = p[0].trim(), subj = p[1].trim(), rc = p[2].trim(), pred = p[3].trim();
+            const q = parseQuantifier(rq); if (!q) return null;
+            const c = parseCopula(rc, rq); if (!c) return null;
+            return { quantifier: q, subject: subj, copula: c, predicate: pred };
+        }
+
+        function parseCSVContent(content, mode) {
+            const lines = content.split('\n'), blocks = []; let cur = [];
+            for (const raw of lines) { const l = raw.trim(); if (l === '') { if (cur.length > 0) { blocks.push(cur); cur = []; } } else { cur.push(l); } }
+            if (cur.length > 0) blocks.push(cur);
+            const valid = [], max = mode === 'statement' ? 2 : 3;
+            for (const block of blocks) {
+                if (block.length > max) continue;
+                const parsed = []; let ok = true;
+                for (const line of block) { const p = parseLine(line); if (!p) { ok = false; break; } parsed.push(p); }
+                if (ok && parsed.length > 0) valid.push(parsed);
+            }
+            return valid;
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                if (currentMode === 'statement') {
+                    statementDataset = parseCSVContent(content, 'statement'); currentDataIndex = 0; updateNavigationDisplay();
+                    if (statementDataset.length > 0) { loadDataAtIndex(0); showToast(`Loaded ${statementDataset.length} statement(s)`, 'success'); }
+                    else showToast('No valid statements found', 'error');
+                } else {
+                    syllogismDataset = parseCSVContent(content, 'syllogism'); currentDataIndex = 0; updateNavigationDisplay();
+                    if (syllogismDataset.length > 0) { loadDataAtIndex(0); showToast(`Loaded ${syllogismDataset.length} syllogism(s)`, 'success'); }
+                    else showToast('No valid syllogisms found', 'error');
+                }
+            };
+            reader.readAsText(file); event.target.value = '';
+        }
+
+        function loadDataAtIndex(index) {
+            const ds = currentMode === 'statement' ? statementDataset : syllogismDataset;
+            if (index < 0 || index >= ds.length) return;
+            currentDataIndex = index; const data = ds[index];
+            if (currentMode === 'statement') {
+                if (data.length >= 1) { document.getElementById('statementPremiseQuantifier').value = data[0].quantifier; document.getElementById('statementPremiseSubject').value = data[0].subject; document.getElementById('statementPremiseCopula').value = data[0].copula; document.getElementById('statementPremisePredicate').value = data[0].predicate; }
+                updateStatementConclusionOptions();
+                if (data.length >= 2) { document.getElementById('statementConclusionQuantifier').value = data[1].quantifier; document.getElementById('statementConclusionSubject').value = data[1].subject; document.getElementById('statementConclusionCopula').value = data[1].copula; document.getElementById('statementConclusionPredicate').value = data[1].predicate; }
+                else { document.getElementById('statementConclusionQuantifier').value = 'All'; document.getElementById('statementConclusionSubject').value = ''; document.getElementById('statementConclusionCopula').value = 'are'; document.getElementById('statementConclusionPredicate').value = ''; }
+                handleStatementChange();
+            } else {
+                if (data.length >= 1) { document.getElementById('premise1Quantifier').value = data[0].quantifier; document.getElementById('premise1Subject').value = data[0].subject; document.getElementById('premise1Copula').value = data[0].copula; document.getElementById('premise1Predicate').value = data[0].predicate; }
+                if (data.length >= 2) { document.getElementById('premise2Quantifier').value = data[1].quantifier; document.getElementById('premise2Subject').value = data[1].subject; document.getElementById('premise2Copula').value = data[1].copula; document.getElementById('premise2Predicate').value = data[1].predicate; }
+                else { document.getElementById('premise2Quantifier').value = 'All'; document.getElementById('premise2Subject').value = ''; document.getElementById('premise2Copula').value = 'are'; document.getElementById('premise2Predicate').value = ''; }
+                updateConclusionOptions();
+                if (data.length >= 3) { document.getElementById('conclusionQuantifier').value = data[2].quantifier; document.getElementById('conclusionSubject').value = data[2].subject; document.getElementById('conclusionCopula').value = data[2].copula; document.getElementById('conclusionPredicate').value = data[2].predicate; }
+                else { document.getElementById('conclusionQuantifier').value = 'All'; document.getElementById('conclusionSubject').value = ''; document.getElementById('conclusionCopula').value = 'are'; document.getElementById('conclusionPredicate').value = ''; }
+                handlePremiseInput();
+            }
+            updateNavigationDisplay();
+        }
+
+        function updateNavigationDisplay() {
+            const ds = currentMode === 'statement' ? statementDataset : syllogismDataset;
+            const t = ds.length, c = t > 0 ? currentDataIndex + 1 : 0;
+            if (currentMode === 'statement') { document.getElementById('navCurrentStatement').textContent = c; document.getElementById('navTotalStatement').textContent = t; document.getElementById('navPrevStatement').disabled = c <= 1; document.getElementById('navNextStatement').disabled = c >= t || t === 0; }
+            else { document.getElementById('navCurrent').textContent = c; document.getElementById('navTotal').textContent = t; document.getElementById('navPrev').disabled = c <= 1; document.getElementById('navNext').disabled = c >= t || t === 0; }
+        }
+
+        function navigatePrev() { if (currentDataIndex > 0) loadDataAtIndex(currentDataIndex - 1); }
+        function navigateNext() { const ds = currentMode === 'statement' ? statementDataset : syllogismDataset; if (currentDataIndex < ds.length - 1) loadDataAtIndex(currentDataIndex + 1); }
+        function navigateGoto() { const v = parseInt(document.getElementById('navGotoInput').value, 10); const ds = currentMode === 'statement' ? statementDataset : syllogismDataset; if (isNaN(v)||v<1||v>ds.length) { showToast(`Enter 1-${ds.length}`, 'error'); return; } loadDataAtIndex(v-1); document.getElementById('navGotoInput').value=''; }
+        function navigateGotoStatement() { const v = parseInt(document.getElementById('navGotoInputStatement').value, 10); if (isNaN(v)||v<1||v>statementDataset.length) { showToast(`Enter 1-${statementDataset.length}`, 'error'); return; } loadDataAtIndex(v-1); document.getElementById('navGotoInputStatement').value=''; }
+
+        // ============================================
+        // TOAST
+        // ============================================
+        function showToast(message, type = 'info') { const t = document.getElementById('toast'); t.textContent = message; t.className = 'toast ' + type; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 2500); }
+
+        // ============================================
+        // LAYOUT
+        // ============================================
+        let diagramLayout = 'upright';
+        function setLayout(layout) {
+            diagramLayout = layout;
+            document.getElementById('layoutUpright').classList.remove('selected');
+            document.getElementById('layoutInverted').classList.remove('selected');
+            document.getElementById('layout' + layout.charAt(0).toUpperCase() + layout.slice(1)).classList.add('selected');
+            ['premises', 'conclusion'].forEach(t => { canvasStates[t].needsLayoutUpdate = true; });
+            applyLayoutToCanvas(activeTab);
+        }
+        function applyLayoutToCanvas(tabName) {
+            const state = canvasStates[tabName], canvas = canvases[tabName];
+            if (canvas.width <= 0 || canvas.height <= 0) return;
+            const cx = canvas.width/2, cy = canvas.height/2;
+            if (currentMode === 'statement' || state.circles.length === 2) { state.circles[0].x=cx-80; state.circles[0].y=cy; state.circles[1].x=cx+80; state.circles[1].y=cy; }
+            else if (diagramLayout === 'upright') { state.circles[0].x=cx-80; state.circles[0].y=cy+50; state.circles[1].x=cx+80; state.circles[1].y=cy+50; state.circles[2].x=cx; state.circles[2].y=cy-70; }
+            else { state.circles[0].x=cx-80; state.circles[0].y=cy-50; state.circles[1].x=cx+80; state.circles[1].y=cy-50; state.circles[2].x=cx; state.circles[2].y=cy+70; }
+            state.initialized = true; state.needsLayoutUpdate = false; draw(tabName);
+        }
+
+        // ============================================
+        // HELP MODAL
+        // ============================================
+        function openHelpModal() { document.getElementById('helpModal').classList.add('visible'); document.body.style.overflow = 'hidden'; }
+        function closeHelpModal() { document.getElementById('helpModal').classList.remove('visible'); document.body.style.overflow = ''; }
+        document.getElementById('helpModal').addEventListener('click', function(e) { if (e.target === this) closeHelpModal(); });
+        document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closeHelpModal(); });
+
+        // ============================================
+        // VALID SYLLOGISM FORMS DATABASE
+        // ============================================
+        const unconditionallyValid = { 1: { 'AAA': 'Barbara', 'EAE': 'Celarent', 'AII': 'Darii', 'EIO': 'Ferio' }, 2: { 'EAE': 'Cesare', 'AEE': 'Camestres', 'EIO': 'Festino', 'AOO': 'Baroco' }, 3: { 'IAI': 'Disamis', 'AII': 'Datisi', 'OAO': 'Bocardo', 'EIO': 'Ferison' }, 4: { 'AEE': 'Camenes', 'IAI': 'Dimaris', 'EIO': 'Fresison' } };
+        const conditionallyValid = { 1: { 'AAI': { name: 'Barbari', condition: 'Requires S to exist' }, 'EAO': { name: 'Celaront', condition: 'Requires S to exist' } }, 2: { 'EAO': { name: 'Cesaro', condition: 'Requires S to exist' }, 'AEO': { name: 'Camestros', condition: 'Requires S to exist' } }, 3: { 'AAI': { name: 'Darapti', condition: 'Requires M to exist' }, 'EAO': { name: 'Felapton', condition: 'Requires M to exist' } }, 4: { 'AAI': { name: 'Bramantip', condition: 'Requires P to exist' }, 'EAO': { name: 'Fesapo', condition: 'Requires M to exist' }, 'AEO': { name: 'Calemos', condition: 'Requires S to exist' } } };
+
+        // ============================================
+        // AUTO DRAW MODE MANAGEMENT
+        // ============================================
+        let autoDrawModes = {
+            premises: 'premises',
+            conclusion: 'conclusion'
+        };
+
+        function setAutoDrawMode(mode, tabName) {
+            autoDrawModes[tabName] = mode;
+            updateAutoDrawButtons(tabName);
+        }
+
+        function updateAutoDrawButtons(tabName) {
+            const mode = autoDrawModes[tabName];
+            const suffix = tabName === 'premises' ? 'Premises' : 'Conclusion';
+
+            // Update toggle highlight
+            const container = document.getElementById('autoDrawToggle' + suffix);
+            if (container) {
+                container.querySelectorAll('.auto-draw-toggle-btn').forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.mode === mode);
+                });
+            }
+
+            const p1 = document.getElementById('autoDrawP1Btn' + suffix);
+            const p2 = document.getElementById('autoDrawP2Btn' + suffix);
+            const both = document.getElementById('autoDrawBothBtn' + suffix);
+            const concl = document.getElementById('autoDrawConclusionBtn' + suffix);
+
+            const isStatement = currentMode === 'statement';
+
+            if (mode === 'premises') {
+                // Enable premise buttons, disable conclusion
+                if (p1) { p1.disabled = false; p1.classList.remove('hidden'); }
+                if (p2) { p2.disabled = false; if (isStatement) p2.classList.add('hidden'); else p2.classList.remove('hidden'); }
+                if (both) { both.disabled = false; if (isStatement) both.classList.add('hidden'); else both.classList.remove('hidden'); }
+                if (concl) { concl.disabled = true; concl.classList.remove('hidden'); }
+            } else {
+                // Enable conclusion button, disable premise buttons
+                if (p1) { p1.disabled = true; p1.classList.remove('hidden'); }
+                if (p2) { p2.disabled = true; if (isStatement) p2.classList.add('hidden'); else p2.classList.remove('hidden'); }
+                if (both) { both.disabled = true; if (isStatement) both.classList.add('hidden'); else both.classList.remove('hidden'); }
+                if (concl) { concl.disabled = false; concl.classList.remove('hidden'); }
+            }
+        }
+
+        function refreshAllAutoDrawButtons() {
+            updateAutoDrawButtons('premises');
+            updateAutoDrawButtons('conclusion');
+        }
+
+        // ============================================
+        // MODE MANAGEMENT
+        // ============================================
+        let currentMode = 'syllogism';
+        function toggleMode() {
+            currentMode = currentMode === 'syllogism' ? 'statement' : 'syllogism';
+            const mt = document.getElementById('modeToggle');
+            if (currentMode === 'statement') {
+                mt.classList.add('statement-mode');
+                document.getElementById('statementLabel').classList.add('active'); document.getElementById('syllogismLabel').classList.remove('active');
+                document.getElementById('syllogismTable').classList.add('hidden'); document.getElementById('statementTable').classList.remove('hidden');
+                document.getElementById('syllogismTypeDisplay').classList.add('hidden'); document.getElementById('statementTypeDisplay').classList.remove('hidden');
+                document.getElementById('knowledgeTable').classList.add('hidden'); document.getElementById('statementKnowledgeTable').classList.remove('hidden');
+                document.getElementById('syllogismOnlySection').classList.add('hidden');
+                document.getElementById('premisesTabLabel').textContent = 'Diagram 1 (e.g. Premise)';
+                document.getElementById('syllogismHeader').classList.add('hidden'); document.getElementById('statementHeader').classList.remove('hidden');
+            } else {
+                mt.classList.remove('statement-mode');
+                document.getElementById('statementLabel').classList.remove('active'); document.getElementById('syllogismLabel').classList.add('active');
+                document.getElementById('syllogismTable').classList.remove('hidden'); document.getElementById('statementTable').classList.add('hidden');
+                document.getElementById('syllogismTypeDisplay').classList.remove('hidden'); document.getElementById('statementTypeDisplay').classList.add('hidden');
+                document.getElementById('knowledgeTable').classList.remove('hidden'); document.getElementById('statementKnowledgeTable').classList.add('hidden');
+                document.getElementById('syllogismOnlySection').classList.remove('hidden');
+                document.getElementById('premisesTabLabel').textContent = 'Diagram 1 (e.g. Premises)';
+                document.getElementById('syllogismHeader').classList.remove('hidden'); document.getElementById('statementHeader').classList.add('hidden');
+            }
+            currentDataIndex = 0; updateNavigationDisplay();
+            resetCanvasesForModeChange(); updateLabelsForMode();
+            refreshAllAutoDrawButtons();
+        }
+
+        function resetCanvasesForModeChange() {
+            ['premises', 'conclusion'].forEach(tabName => {
+                const state = canvasStates[tabName];
+                state.regionColors = {}; state.existenceMarkers = []; state.initialized = false; state.needsLayoutUpdate = false;
+                if (currentMode === 'statement') {
+                    state.circles = [
+                        { x:0, y:0, r:120, label:'Subject (S)', color:'rgba(59,130,246,0.1)', borderColor:'#3b82f6' },
+                        { x:0, y:0, r:120, label:'Predicate (P)', color:'rgba(239,68,68,0.1)', borderColor:'#ef4444' }
+                    ];
+                } else {
+                    state.circles = [
+                        { x:0, y:0, r:120, label:'Subject (S)', color:'rgba(59,130,246,0.1)', borderColor:'#3b82f6' },
+                        { x:0, y:0, r:120, label:'Predicate (P)', color:'rgba(239,68,68,0.1)', borderColor:'#ef4444' },
+                        { x:0, y:0, r:120, label:'Middle (M)', color:'rgba(34,197,94,0.1)', borderColor:'#22c55e' }
+                    ];
+                }
+                resizeCanvas(tabName);
+            });
+        }
+
+        function updateLabelsForMode() {
+            if (currentMode === 'statement') {
+                const s = document.getElementById('statementPremiseSubject').value || 'Subject (S)';
+                const p = document.getElementById('statementPremisePredicate').value || 'Predicate (P)';
+                const sL = s === 'Subject (S)' ? s : s + ' (S)', pL = p === 'Predicate (P)' ? p : p + ' (P)';
+                ['premises','conclusion'].forEach(t => { canvasStates[t].circles[0].label = sL; canvasStates[t].circles[1].label = pL; });
+            }
+            draw('premises'); draw('conclusion');
+        }
+
+        // ============================================
+        // COPY FUNCTIONS
+        // ============================================
+        function copyToPremise1() { document.getElementById('premise1Quantifier').value = document.getElementById('statementPremiseQuantifier').value; document.getElementById('premise1Subject').value = document.getElementById('statementPremiseSubject').value; document.getElementById('premise1Copula').value = document.getElementById('statementPremiseCopula').value; document.getElementById('premise1Predicate').value = document.getElementById('statementPremisePredicate').value; handlePremiseInput(); showToast('Copied to Syllogism Premise 1', 'success'); }
+        function copyToPremise2() { document.getElementById('premise2Quantifier').value = document.getElementById('statementPremiseQuantifier').value; document.getElementById('premise2Subject').value = document.getElementById('statementPremiseSubject').value; document.getElementById('premise2Copula').value = document.getElementById('statementPremiseCopula').value; document.getElementById('premise2Predicate').value = document.getElementById('statementPremisePredicate').value; handlePremiseInput(); showToast('Copied to Syllogism Premise 2', 'success'); }
+        function copyConclusionToPremise1() { const s = document.getElementById('conclusionSubject').value, p = document.getElementById('conclusionPredicate').value; if (!s||!p) { showToast('Select conclusion terms first', 'info'); return; } document.getElementById('premise1Quantifier').value = document.getElementById('conclusionQuantifier').value; document.getElementById('premise1Subject').value = s; document.getElementById('premise1Copula').value = document.getElementById('conclusionCopula').value; document.getElementById('premise1Predicate').value = p; handlePremiseInput(); showToast('Conclusion copied to Premise 1', 'success'); }
+
+        // ============================================
+        // ALTERNATIVE EXPRESSION FOR E TYPE
+        // ============================================
+        function updateAlternativeExpressions() { ['premise1','premise2','conclusion','statementPremise','statementConclusion'].forEach(updateRowAlternative); }
+        function updateRowAlternative(rowPrefix) {
+            const qE = document.getElementById(rowPrefix+'Quantifier'), cE = document.getElementById(rowPrefix+'Copula'), aqE = document.getElementById(rowPrefix+'AltQuantifier'), acE = document.getElementById(rowPrefix+'AltCopula');
+            if (!qE||!cE||!aqE||!acE) return;
+            if (qE.value === 'All' && cE.value === 'are not') { aqE.textContent = customTerms.no; acE.textContent = customTerms.is; }
+            else { aqE.textContent = ''; acE.textContent = ''; }
+        }
+
+        // ============================================
+        // FALLACY DISPLAY
+        // ============================================
+        function updateFallacyDisplay(key) {
+            const map = { threeTerms: ['proofThreeTerms','fallacyThreeTerms'], middleTerm: ['proofMiddleTerm','fallacyMiddleTerm'], conclusionDist: ['proofConclusionDist','fallacyConclusionDist'], affirmative: ['proofAffirmative','fallacyAffirmative'], negative: ['proofNegative','fallacyNegative'], existential: ['proofExistential','fallacyExistential'] };
+            const ids = map[key]; if (!ids) return;
+            const sel = document.getElementById(ids[0]), f = document.getElementById(ids[1]); if (!sel||!f) return;
+            f.classList.remove('active-yes','active-no');
+            if (sel.value === 'YES') f.classList.add('active-yes');
+            else if (sel.value === 'NO') f.classList.add('active-no');
+        }
+        function updateAllFallacyDisplays() { ['threeTerms','middleTerm','conclusionDist','affirmative','negative','existential'].forEach(updateFallacyDisplay); }
+        function resetProvingTable() {
+            ['proofThreeTerms','proofMiddleTerm','proofConclusionDist','proofAffirmative','proofNegative','proofExistential'].forEach(id => { const e = document.getElementById(id); if(e) e.value=''; });
+            ['fallacyThreeTerms','fallacyMiddleTerm','fallacyConclusionDist','fallacyAffirmative','fallacyNegative','fallacyExistential'].forEach(id => { const e = document.getElementById(id); if(e) e.classList.remove('active-yes','active-no'); });
+        }
+
+        // ============================================
+        // SYSTEM PROVING
+        // ============================================
+        function systemProving() {
+            const p1s = document.getElementById('premise1Subject').value.trim().toLowerCase(), p1p = document.getElementById('premise1Predicate').value.trim().toLowerCase();
+            const p2s = document.getElementById('premise2Subject').value.trim().toLowerCase(), p2p = document.getElementById('premise2Predicate').value.trim().toLowerCase();
+            const cs = document.getElementById('conclusionSubject').value.trim().toLowerCase(), cp = document.getElementById('conclusionPredicate').value.trim().toLowerCase();
+            if (!p1s||!p1p||!p2s||!p2p||!cs||!cp) { showToast('Fill in all terms first', 'error'); return; }
+            const p1T = getPropositionType(document.getElementById('premise1Quantifier').value, document.getElementById('premise1Copula').value);
+            const p2T = getPropositionType(document.getElementById('premise2Quantifier').value, document.getElementById('premise2Copula').value);
+            const cT = getPropositionType(document.getElementById('conclusionQuantifier').value, document.getElementById('conclusionCopula').value);
+            const p1Neg = p1T==='E'||p1T==='O', p2Neg = p2T==='E'||p2T==='O', cNeg = cT==='E'||cT==='O', negCount = (p1Neg?1:0)+(p2Neg?1:0);
+            const allT = [p1s,p1p,p2s,p2p], tc = {}; allT.forEach(t=>tc[t]=(tc[t]||0)+1);
+            let mt = null; for(const[t,c]of Object.entries(tc)) if(c>=2&&t!==cp&&t!==cs){mt=t;break;}
+            const p1Terms=[p1s,p1p], p2Terms=[p2s,p2p];
+            let majT,minT,majS,majP,minS,minP;
+            if(p1Terms.includes(cp)){majT=p1T;majS=p1s;majP=p1p;minT=p2T;minS=p2s;minP=p2p;}else{majT=p2T;majS=p2s;majP=p2p;minT=p1T;minS=p1s;minP=p1p;}
+            const uniqueT = new Set(allT);
+            document.getElementById('proofThreeTerms').value = (uniqueT.size===3&&uniqueT.has(cp)&&uniqueT.has(cs)&&mt!==null)?'YES':'NO';
+            let md1=false,md2=false;
+            if(mt){if(p1s===mt)md1=p1T==='A'||p1T==='E';if(p1p===mt)md1=md1||(p1T==='E'||p1T==='O');if(p2s===mt)md2=p2T==='A'||p2T==='E';if(p2p===mt)md2=md2||(p2T==='E'||p2T==='O');}
+            document.getElementById('proofMiddleTerm').value=(md1||md2)?'YES':'NO';
+            const sDC=cT==='A'||cT==='E', pDC=cT==='E'||cT==='O';
+            let sDM=false; if(minS===cs)sDM=minT==='A'||minT==='E'; if(minP===cs)sDM=sDM||(minT==='E'||minT==='O');
+            let pDM=false; if(majS===cp)pDM=majT==='A'||majT==='E'; if(majP===cp)pDM=pDM||(majT==='E'||majT==='O');
+            let cdv=true; if(pDC&&!pDM)cdv=false; if(sDC&&!sDM)cdv=false;
+            document.getElementById('proofConclusionDist').value=cdv?'YES':'NO';
+            document.getElementById('proofAffirmative').value=negCount<2?'YES':'NO';
+            let nmv=true; if(negCount===1&&!cNeg)nmv=false; if(negCount===0&&cNeg)nmv=false; if(negCount===2&&!cNeg)nmv=false;
+            document.getElementById('proofNegative').value=nmv?'YES':'NO';
+            const p1U=p1T==='A'||p1T==='E', p2U=p2T==='A'||p2T==='E', cPart=cT==='I'||cT==='O';
+            document.getElementById('proofExistential').value=(cPart&&p1U&&p2U)?'NO':'YES';
+            updateAllFallacyDisplays();
+        }
+
+        // ============================================
+        // WEB SEARCH
+        // ============================================
+        function updateSearchQuery() { const fc = document.getElementById('validityFormCode').textContent; document.getElementById('searchInput').value = (fc&&fc!=='?'&&fc!=='---'&&fc!=='???') ? `Is ${fc} valid in syllogism? Please give me examples.` : 'Is AAA-1 valid in syllogism? Please give me examples.'; }
+        function resetSearchQuery() { document.getElementById('searchInput').value = 'Is AAA-1 valid in syllogism? Please give me examples.'; }
+        function performWebSearch() { window.open(`https://www.google.com/search?q=${encodeURIComponent(document.getElementById('searchInput').value)}`, '_blank'); }
+
+        // ============================================
+        // RESET
+        // ============================================
+        function resetSyllogism() {
+            ['premise1Quantifier','premise2Quantifier','conclusionQuantifier'].forEach(id=>document.getElementById(id).value='All');
+            ['premise1Copula','premise2Copula','conclusionCopula'].forEach(id=>document.getElementById(id).value='are');
+            ['premise1Subject','premise1Predicate','premise2Subject','premise2Predicate'].forEach(id=>{document.getElementById(id).value='';document.getElementById(id).classList.remove('error');});
+            document.getElementById('conclusionSubject').innerHTML='<option value="">Select...</option>';
+            document.getElementById('conclusionPredicate').innerHTML='<option value="">Select...</option>';
+            document.getElementById('premise1Label').textContent='PREMISE 1'; document.getElementById('premise1Label').classList.remove('major','minor');
+            document.getElementById('premise2Label').textContent='PREMISE 2'; document.getElementById('premise2Label').classList.remove('major','minor');
+            document.getElementById('majorTypeLabel').textContent='Premise 1 Type'; document.getElementById('minorTypeLabel').textContent='Premise 2 Type';
+            ['premise1SubjectDist','premise1PredicateDist','premise2SubjectDist','premise2PredicateDist','conclusionSubjectDist','conclusionPredicateDist'].forEach(id=>{const b=document.getElementById(id);if(b){b.textContent='';b.className='distribution-badge';}});
+            document.getElementById('warningBox').classList.remove('visible'); document.getElementById('successBox').classList.remove('visible');
+            document.getElementById('premise1Type').textContent='A'; document.getElementById('premise2Type').textContent='A'; document.getElementById('conclusionType').textContent='A';
+            resetValidityDisplay(); resetProvingTable(); updateAlternativeExpressions(); resetSearchQuery();
+            ['premises','conclusion'].forEach(t=>{const s=canvasStates[t];if(s.circles.length>0)s.circles[0].label='Subject (S)';if(s.circles.length>1)s.circles[1].label='Predicate (P)';if(s.circles.length>2)s.circles[2].label='Middle (M)';draw(t);});
+        }
+        function resetStatement() {
+            document.getElementById('statementPremiseQuantifier').value='All'; document.getElementById('statementPremiseCopula').value='are';
+            document.getElementById('statementPremiseSubject').value=''; document.getElementById('statementPremisePredicate').value='';
+            document.getElementById('statementPremiseSubject').classList.remove('error'); document.getElementById('statementPremisePredicate').classList.remove('error');
+            document.getElementById('statementConclusionQuantifier').value='All'; document.getElementById('statementConclusionCopula').value='are';
+            document.getElementById('statementConclusionSubject').innerHTML='<option value="">Select...</option>'; document.getElementById('statementConclusionPredicate').innerHTML='<option value="">Select...</option>';
+            ['statementPremiseSubjectDist','statementPremisePredicateDist','statementConclusionSubjectDist','statementConclusionPredicateDist'].forEach(id=>{const b=document.getElementById(id);if(b){b.textContent='';b.className='distribution-badge';}});
+            document.getElementById('warningBox').classList.remove('visible'); document.getElementById('successBox').classList.remove('visible');
+            document.getElementById('statementPremiseType').textContent='A'; document.getElementById('statementConclusionType').textContent='A';
+            updateAlternativeExpressions();
+            ['premises','conclusion'].forEach(t=>{const s=canvasStates[t];if(s.circles.length>0)s.circles[0].label='Subject (S)';if(s.circles.length>1)s.circles[1].label='Predicate (P)';draw(t);});
+        }
+
+        // ============================================
+        // TAB SWITCHING
+        // ============================================
+        let activeTab = 'premises';
+        function switchTab(tabName) {
+            activeTab = tabName;
+            document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+            document.querySelector(`.tab-btn.${tabName}`).classList.add('active');
+            document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+            document.getElementById(`${tabName}Tab`).classList.add('active');
+            resizeCanvas(tabName);
+            if(canvasStates[tabName].needsLayoutUpdate) applyLayoutToCanvas(tabName);
+        }
+
+        // ============================================
+        // RESIZABLE PANELS
+        // ============================================
+        const resizer = document.getElementById('resizer'), leftPanel = document.getElementById('leftPanel');
+        let isResizing = false;
+        resizer.addEventListener('mousedown', e=>{isResizing=true;resizer.classList.add('active');document.body.style.cursor='col-resize';e.preventDefault();});
+        document.addEventListener('mousemove', e=>{if(!isResizing)return;const w=e.clientX;if(w>280&&w<window.innerWidth-300){leftPanel.style.width=w+'px';resizeCanvas('premises');resizeCanvas('conclusion');}});
+        document.addEventListener('mouseup', ()=>{if(isResizing){isResizing=false;resizer.classList.remove('active');document.body.style.cursor='default';}});
+        resizer.addEventListener('touchstart', e=>{isResizing=true;resizer.classList.add('active');e.preventDefault();},{passive:false});
+        document.addEventListener('touchmove', e=>{if(!isResizing)return;const w=e.touches[0].clientX;if(w>280&&w<window.innerWidth-300){leftPanel.style.width=w+'px';resizeCanvas('premises');resizeCanvas('conclusion');}},{passive:true});
+        document.addEventListener('touchend', ()=>{if(isResizing){isResizing=false;resizer.classList.remove('active');}});
+
+        // ============================================
+        // CANVAS SETUP
+        // ============================================
+        const canvases = { premises: document.getElementById('vennCanvasPremises'), conclusion: document.getElementById('vennCanvasConclusion') };
+        const contexts = { premises: canvases.premises.getContext('2d'), conclusion: canvases.conclusion.getContext('2d') };
+        const canvasStates = {
+            premises: { selectedColor:'#3b82f6', overlayMode:false, transparency:0, useStripes:false, stripeAngle:45, isAristotelian:false, circles:[{x:0,y:0,r:120,label:'Subject (S)',color:'rgba(59,130,246,0.1)',borderColor:'#3b82f6'},{x:0,y:0,r:120,label:'Predicate (P)',color:'rgba(239,68,68,0.1)',borderColor:'#ef4444'},{x:0,y:0,r:120,label:'Middle (M)',color:'rgba(34,197,94,0.1)',borderColor:'#22c55e'}], regionColors:{}, existenceMarkers:[], dragging:null, resizingCircle:null, draggingExistence:null, dragOffset:{x:0,y:0}, initialized:false, needsLayoutUpdate:false, isPainting:false, lastPaintedRegion:null },
+            conclusion: { selectedColor:'#3b82f6', overlayMode:false, transparency:0, useStripes:false, stripeAngle:45, isAristotelian:false, circles:[{x:0,y:0,r:120,label:'Subject (S)',color:'rgba(59,130,246,0.1)',borderColor:'#3b82f6'},{x:0,y:0,r:120,label:'Predicate (P)',color:'rgba(239,68,68,0.1)',borderColor:'#ef4444'},{x:0,y:0,r:120,label:'Middle (M)',color:'rgba(34,197,94,0.1)',borderColor:'#22c55e'}], regionColors:{}, existenceMarkers:[], dragging:null, resizingCircle:null, draggingExistence:null, dragOffset:{x:0,y:0}, initialized:false, needsLayoutUpdate:false, isPainting:false, lastPaintedRegion:null }
+        };
+        const MIN_RADIUS = 40, MAX_RADIUS = 200, RESIZE_HANDLE_WIDTH = 15;
+
+        // ============================================
+        // PATTERN CONTROLS
+        // ============================================
+        function updateOverlay(t){canvasStates[t].overlayMode=document.getElementById(`overlayCheckbox${t.charAt(0).toUpperCase()+t.slice(1)}`).checked;}
+        function updateTransparency(t,v){canvasStates[t].transparency=parseInt(v);document.getElementById(`transparencyValue${t.charAt(0).toUpperCase()+t.slice(1)}`).textContent=v+'%';updatePatternPreview(t);}
+        function updateStripes(t){const cb=document.getElementById(`stripesCheckbox${t.charAt(0).toUpperCase()+t.slice(1)}`),sl=document.getElementById(`stripeAngleSlider${t.charAt(0).toUpperCase()+t.slice(1)}`);canvasStates[t].useStripes=cb.checked;sl.disabled=!cb.checked;updatePatternPreview(t);}
+        function updateStripeAngle(t,v){canvasStates[t].stripeAngle=parseInt(v);document.getElementById(`stripeAngleValue${t.charAt(0).toUpperCase()+t.slice(1)}`).textContent=v+'°';updatePatternPreview(t);}
+
+        function updatePatternPreview(t) {
+            const s=canvasStates[t], c=document.getElementById(`patternPreview${t.charAt(0).toUpperCase()+t.slice(1)}`), x=c.getContext('2d');
+            x.clearRect(0,0,c.width,c.height); x.fillStyle='#f0f0f0'; x.fillRect(0,0,c.width,c.height);
+            const a=1-(s.transparency/100);
+            if(s.useStripes){const p=createStripePattern(x,s.selectedColor,a,s.stripeAngle);if(p){x.fillStyle=p;x.fillRect(0,0,c.width,c.height);}}
+            else{x.fillStyle=hexToRgba(s.selectedColor,a);x.fillRect(0,0,c.width,c.height);}
+            x.strokeStyle='#cbd5e1';x.lineWidth=1;x.strokeRect(0,0,c.width,c.height);
+        }
+
+        function createStripePattern(ctx, color, alpha, angle) {
+            const pc = document.createElement('canvas'), px = pc.getContext('2d'), sp = 6, sz = sp*2;
+            pc.width=sz; pc.height=sz; px.clearRect(0,0,sz,sz);
+            px.strokeStyle=hexToRgba(color,alpha); px.lineWidth=2;
+            const rad=(angle*Math.PI)/180;
+            px.save(); px.translate(sz/2,sz/2); px.rotate(rad);
+            for(let i=-sz*2;i<sz*2;i+=sp){px.beginPath();px.moveTo(i,-sz*2);px.lineTo(i,sz*2);px.stroke();}
+            px.restore();
+            return ctx.createPattern(pc,'repeat');
+        }
+
+        function hexToRgba(hex,alpha){if(hex==='transparent')return'rgba(255,255,255,0)';const r=/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);return r?`rgba(${parseInt(r[1],16)},${parseInt(r[2],16)},${parseInt(r[3],16)},${alpha})`:hex;}
+
+        function resizeCanvas(tabName) {
+            const container = document.getElementById(`${tabName}Tab`), cc = container.querySelector('.canvas-container'), canvas = canvases[tabName], state = canvasStates[tabName];
+            if(cc.clientWidth===0||cc.clientHeight===0)return;
+            canvas.width=cc.clientWidth; canvas.height=cc.clientHeight;
+            if(!state.initialized){
+                const cx=canvas.width/2, cy=canvas.height/2;
+                if(currentMode==='statement'||state.circles.length===2){state.circles[0].x=cx-80;state.circles[0].y=cy;state.circles[1].x=cx+80;state.circles[1].y=cy;}
+                else if(diagramLayout==='upright'){state.circles[0].x=cx-80;state.circles[0].y=cy+50;state.circles[1].x=cx+80;state.circles[1].y=cy+50;state.circles[2].x=cx;state.circles[2].y=cy-70;}
+                else{state.circles[0].x=cx-80;state.circles[0].y=cy-50;state.circles[1].x=cx+80;state.circles[1].y=cy-50;state.circles[2].x=cx;state.circles[2].y=cy+70;}
+                state.initialized=true;
+            }
+            draw(tabName);
+        }
+
+        function resetDiagram(tabName) {
+            const canvas=canvases[tabName], state=canvasStates[tabName];
+            state.regionColors={}; state.existenceMarkers=[]; state.overlayMode=false; state.transparency=0; state.useStripes=false; state.stripeAngle=45;
+            const cap=tabName.charAt(0).toUpperCase()+tabName.slice(1);
+            document.getElementById(`overlayCheckbox${cap}`).checked=false;
+            document.getElementById(`transparencySlider${cap}`).value=0; document.getElementById(`transparencyValue${cap}`).textContent='0%';
+            document.getElementById(`stripesCheckbox${cap}`).checked=false;
+            document.getElementById(`stripeAngleSlider${cap}`).value=45; document.getElementById(`stripeAngleSlider${cap}`).disabled=true; document.getElementById(`stripeAngleValue${cap}`).textContent='45°';
+            const cx=canvas.width/2, cy=canvas.height/2;
+            if(currentMode==='statement'||state.circles.length===2){state.circles[0].x=cx-80;state.circles[0].y=cy;state.circles[0].r=120;state.circles[1].x=cx+80;state.circles[1].y=cy;state.circles[1].r=120;}
+            else if(diagramLayout==='upright'){state.circles[0].x=cx-80;state.circles[0].y=cy+50;state.circles[0].r=120;state.circles[1].x=cx+80;state.circles[1].y=cy+50;state.circles[1].r=120;state.circles[2].x=cx;state.circles[2].y=cy-70;state.circles[2].r=120;}
+            else{state.circles[0].x=cx-80;state.circles[0].y=cy-50;state.circles[0].r=120;state.circles[1].x=cx+80;state.circles[1].y=cy-50;state.circles[1].r=120;state.circles[2].x=cx;state.circles[2].y=cy+70;state.circles[2].r=120;}
+            updatePatternPreview(tabName); draw(tabName); showToast('Diagram reset','info');
+        }
+
+        function getRegionKey(regions){return regions.sort().join('-');}
+        function pointInCircle(px,py,c){const dx=px-c.x,dy=py-c.y;return dx*dx+dy*dy<=c.r*c.r;}
+        function getRegionsAtPoint(x,y,t){const s=canvasStates[t],r=[];if(pointInCircle(x,y,s.circles[0]))r.push('S');if(pointInCircle(x,y,s.circles[1]))r.push('P');if(s.circles.length>2&&pointInCircle(x,y,s.circles[2]))r.push('M');return r;}
+        function isOnCircleEdge(x,y,c){const dx=x-c.x,dy=y-c.y,d=Math.sqrt(dx*dx+dy*dy);return Math.abs(d-c.r)<=RESIZE_HANDLE_WIDTH;}
+        function getCircleEdgeAt(x,y,t){const s=canvasStates[t];for(let i=s.circles.length-1;i>=0;i--)if(isOnCircleEdge(x,y,s.circles[i]))return i;return-1;}
+
+        function toggleLogic(t){const s=canvasStates[t];s.isAristotelian=!s.isAristotelian;const cap=t.charAt(0).toUpperCase()+t.slice(1);const tg=document.getElementById(`logicToggle${cap}`),sl=document.getElementById(`toggleSlider${cap}`);if(s.isAristotelian){tg.classList.add('aristotelian');sl.textContent='Aristotelian';}else{tg.classList.remove('aristotelian');sl.textContent='Boolean';}draw(t);}
+        function addExistence(t){const c=canvases[t],s=canvasStates[t],cx=c.width/2,cy=c.height/2;s.existenceMarkers.push({x:cx+(Math.random()-0.5)*100,y:cy+(Math.random()-0.5)*100});draw(t);}
+        function clearExistence(t){canvasStates[t].existenceMarkers=[];draw(t);}
+
+        function drawExistenceMarker(ctx,m,isA){const sz=12;ctx.lineWidth=3;ctx.strokeStyle='#1e293b';ctx.fillStyle='#1e293b';if(isA){ctx.beginPath();ctx.arc(m.x,m.y,sz+4,0,Math.PI*2);ctx.stroke();}ctx.beginPath();ctx.moveTo(m.x-sz,m.y-sz);ctx.lineTo(m.x+sz,m.y+sz);ctx.moveTo(m.x+sz,m.y-sz);ctx.lineTo(m.x-sz,m.y+sz);ctx.stroke();}
+        function drawResizeHandles(ctx,c){ctx.save();ctx.strokeStyle='rgba(100,100,100,0.5)';ctx.setLineDash([5,5]);ctx.lineWidth=2;ctx.beginPath();ctx.arc(c.x,c.y,c.r,0,Math.PI*2);ctx.stroke();ctx.restore();}
+
+        function draw(tabName) {
+            const canvas=canvases[tabName],ctx=contexts[tabName],state=canvasStates[tabName];
+            if(canvas.width===0||canvas.height===0)return;
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            drawColoredRegions(tabName);
+            state.circles.forEach((circle,index)=>{
+                ctx.beginPath();ctx.arc(circle.x,circle.y,circle.r,0,Math.PI*2);ctx.strokeStyle=circle.borderColor;ctx.lineWidth=3;ctx.stroke();
+                ctx.fillStyle='#1e293b';ctx.font='bold 14px Segoe UI';ctx.textAlign='center';
+                let ly;
+                if(currentMode==='syllogism'&&state.circles.length>2&&index===2){ly=diagramLayout==='upright'?circle.y-circle.r-15:circle.y+circle.r+25;}
+                else{ly=(currentMode==='syllogism'&&diagramLayout==='inverted')?circle.y-circle.r-15:circle.y+circle.r+25;}
+                ctx.fillText(circle.label,circle.x,ly);
+            });
+            if(state.resizingCircle!==null)drawResizeHandles(ctx,state.circles[state.resizingCircle]);
+            state.existenceMarkers.forEach(m=>drawExistenceMarker(ctx,m,state.isAristotelian));
+        }
+
+        function drawColoredRegions(tabName) {
+            const canvas=canvases[tabName],ctx=contexts[tabName],state=canvasStates[tabName],step=2;
+            const rp={};
+            for(let x=0;x<canvas.width;x+=step)for(let y=0;y<canvas.height;y+=step){
+                const regions=getRegionsAtPoint(x,y,tabName);
+                if(regions.length>0){const key=getRegionKey([...regions]);if(state.regionColors[key]&&state.regionColors[key].length>0){if(!rp[key])rp[key]=[];rp[key].push({x,y});}}
+            }
+            for(const[key,pixels]of Object.entries(rp)){
+                const layers=state.regionColors[key];if(!layers||layers.length===0)continue;
+                for(const layer of layers){
+                    if(layer.color==='transparent')continue;
+                    const alpha=1-(layer.transparency/100);
+                    if(layer.useStripes){const p=createStripePattern(ctx,layer.color,alpha,layer.stripeAngle);if(p){ctx.fillStyle=p;pixels.forEach(p2=>ctx.fillRect(p2.x,p2.y,step,step));}}
+                    else{ctx.fillStyle=hexToRgba(layer.color,alpha);pixels.forEach(p2=>ctx.fillRect(p2.x,p2.y,step,step));}
+                }
+            }
+        }
+
+        function selectColor(btn,t){btn.closest('.color-palette').querySelectorAll('.color-btn').forEach(b=>b.classList.remove('selected'));btn.classList.add('selected');canvasStates[t].selectedColor=btn.dataset.color;updatePatternPreview(t);}
+        function clearColors(t){canvasStates[t].regionColors={};draw(t);}
+        function getExistenceAtPoint(x,y,t){const s=canvasStates[t];for(let i=s.existenceMarkers.length-1;i>=0;i--){const m=s.existenceMarkers[i];if(Math.sqrt((x-m.x)**2+(y-m.y)**2)<=25)return i;}return-1;}
+        function updateCursor(x,y,t){const c=canvases[t],s=canvasStates[t];if(getExistenceAtPoint(x,y,t)>=0){c.style.cursor='grab';return;}if(getCircleEdgeAt(x,y,t)>=0){c.style.cursor='nwse-resize';return;}for(const ci of s.circles){if(Math.sqrt((x-ci.x)**2+(y-ci.y)**2)<=ci.r-RESIZE_HANDLE_WIDTH){c.style.cursor='grab';return;}}c.style.cursor='default';}
+
+        function paintRegion(t,key){const s=canvasStates[t],nl={color:s.selectedColor,transparency:s.transparency,useStripes:s.useStripes,stripeAngle:s.stripeAngle};if(s.overlayMode){if(!s.regionColors[key])s.regionColors[key]=[];s.regionColors[key].push(nl);}else{s.regionColors[key]=[nl];}}
+
+        // ============================================
+        // UNIFIED INPUT HANDLING
+        // ============================================
+        function getEventCoordinates(e,canvas){const r=canvas.getBoundingClientRect();if(e.touches&&e.touches.length>0)return{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top};if(e.changedTouches&&e.changedTouches.length>0)return{x:e.changedTouches[0].clientX-r.left,y:e.changedTouches[0].clientY-r.top};return{x:e.clientX-r.left,y:e.clientY-r.top};}
+
+        function handlePointerStart(e,t){const c=canvases[t],s=canvasStates[t],co=getEventCoordinates(e,c),x=co.x,y=co.y;
+            const ei=getExistenceAtPoint(x,y,t);if(ei>=0){s.draggingExistence=ei;s.dragOffset.x=x-s.existenceMarkers[ei].x;s.dragOffset.y=y-s.existenceMarkers[ei].y;c.style.cursor='grabbing';return true;}
+            const eci=getCircleEdgeAt(x,y,t);if(eci>=0){s.resizingCircle=eci;c.style.cursor='nwse-resize';return true;}
+            for(let i=s.circles.length-1;i>=0;i--){const ci=s.circles[i];if(Math.sqrt((x-ci.x)**2+(y-ci.y)**2)<=ci.r*0.4){s.dragging=i;s.dragOffset.x=x-ci.x;s.dragOffset.y=y-ci.y;c.style.cursor='grabbing';return true;}}
+            const regions=getRegionsAtPoint(x,y,t);if(regions.length>0){s.isPainting=true;const key=getRegionKey([...regions]);paintRegion(t,key);s.lastPaintedRegion=key;draw(t);return true;}
+            return false;
+        }
+
+        function handlePointerMove(e,t){const c=canvases[t],s=canvasStates[t],co=getEventCoordinates(e,c),x=co.x,y=co.y;
+            if(s.draggingExistence!==null){s.existenceMarkers[s.draggingExistence].x=x-s.dragOffset.x;s.existenceMarkers[s.draggingExistence].y=y-s.dragOffset.y;draw(t);return true;}
+            if(s.resizingCircle!==null){const ci=s.circles[s.resizingCircle];ci.r=Math.max(MIN_RADIUS,Math.min(MAX_RADIUS,Math.sqrt((x-ci.x)**2+(y-ci.y)**2)));draw(t);return true;}
+            if(s.dragging!==null){s.circles[s.dragging].x=x-s.dragOffset.x;s.circles[s.dragging].y=y-s.dragOffset.y;draw(t);return true;}
+            if(s.isPainting){const regions=getRegionsAtPoint(x,y,t);if(regions.length>0){const key=getRegionKey([...regions]);if(key!==s.lastPaintedRegion){paintRegion(t,key);s.lastPaintedRegion=key;draw(t);}}return true;}
+            if(!e.touches)updateCursor(x,y,t);return false;
+        }
+
+        function handlePointerEnd(e,t){const c=canvases[t],s=canvasStates[t];s.draggingExistence=null;s.resizingCircle=null;s.dragging=null;s.isPainting=false;s.lastPaintedRegion=null;c.style.cursor='default';draw(t);}
+
+        ['premises','conclusion'].forEach(t=>{const c=canvases[t];
+            c.addEventListener('mousedown',e=>{e.preventDefault();handlePointerStart(e,t);});
+            c.addEventListener('mousemove',e=>handlePointerMove(e,t));
+            c.addEventListener('mouseup',e=>handlePointerEnd(e,t));
+            c.addEventListener('mouseleave',()=>handlePointerEnd({},t));
+            c.addEventListener('touchstart',e=>{e.preventDefault();handlePointerStart(e,t);},{passive:false});
+            c.addEventListener('touchmove',e=>{e.preventDefault();handlePointerMove(e,t);},{passive:false});
+            c.addEventListener('touchend',e=>{e.preventDefault();handlePointerEnd(e,t);},{passive:false});
+            c.addEventListener('touchcancel',e=>handlePointerEnd(e,t));
+        });
+
+        // ============================================
+        // DISTRIBUTION LOGIC
+        // ============================================
+        function isTermDistributed(q,c,pos){if(pos==='subject')return q==='All';if(pos==='predicate')return c==='are not';return false;}
+        function updateDistributionBadges(){
+            if(currentMode==='syllogism'){
+                const p1q=document.getElementById('premise1Quantifier').value,p1c=document.getElementById('premise1Copula').value;
+                updateBadge('premise1SubjectDist',document.getElementById('premise1Subject').value.trim(),isTermDistributed(p1q,p1c,'subject'));
+                updateBadge('premise1PredicateDist',document.getElementById('premise1Predicate').value.trim(),isTermDistributed(p1q,p1c,'predicate'));
+                const p2q=document.getElementById('premise2Quantifier').value,p2c=document.getElementById('premise2Copula').value;
+                updateBadge('premise2SubjectDist',document.getElementById('premise2Subject').value.trim(),isTermDistributed(p2q,p2c,'subject'));
+                updateBadge('premise2PredicateDist',document.getElementById('premise2Predicate').value.trim(),isTermDistributed(p2q,p2c,'predicate'));
+                const cq=document.getElementById('conclusionQuantifier').value,cc=document.getElementById('conclusionCopula').value;
+                updateBadge('conclusionSubjectDist',document.getElementById('conclusionSubject').value.trim(),isTermDistributed(cq,cc,'subject'));
+                updateBadge('conclusionPredicateDist',document.getElementById('conclusionPredicate').value.trim(),isTermDistributed(cq,cc,'predicate'));
+            }else{
+                const pq=document.getElementById('statementPremiseQuantifier').value,pc=document.getElementById('statementPremiseCopula').value;
+                updateBadge('statementPremiseSubjectDist',document.getElementById('statementPremiseSubject').value.trim(),isTermDistributed(pq,pc,'subject'));
+                updateBadge('statementPremisePredicateDist',document.getElementById('statementPremisePredicate').value.trim(),isTermDistributed(pq,pc,'predicate'));
+                const cq=document.getElementById('statementConclusionQuantifier').value,cc=document.getElementById('statementConclusionCopula').value;
+                updateBadge('statementConclusionSubjectDist',document.getElementById('statementConclusionSubject').value.trim(),isTermDistributed(cq,cc,'subject'));
+                updateBadge('statementConclusionPredicateDist',document.getElementById('statementConclusionPredicate').value.trim(),isTermDistributed(cq,cc,'predicate'));
+            }
+        }
+        function updateBadge(id,val,dist){const b=document.getElementById(id);if(!b)return;if(!val){b.textContent='';b.className='distribution-badge';return;}b.textContent=dist?'D':'xD';b.className='distribution-badge '+(dist?'distributed':'undistributed');}
+
+        // ============================================
+        // PROPOSITION LOGIC
+        // ============================================
+        function getPropositionType(q,c){if(q==='All'&&c==='are')return'A';if(q==='All'&&c==='are not')return'E';if(q==='Some'&&c==='are')return'I';if(q==='Some'&&c==='are not')return'O';return'?';}
+
+        function updateTypes(){
+            if(currentMode==='syllogism'){
+                document.getElementById('premise1Type').textContent=getPropositionType(document.getElementById('premise1Quantifier').value,document.getElementById('premise1Copula').value);
+                document.getElementById('premise2Type').textContent=getPropositionType(document.getElementById('premise2Quantifier').value,document.getElementById('premise2Copula').value);
+                document.getElementById('conclusionType').textContent=getPropositionType(document.getElementById('conclusionQuantifier').value,document.getElementById('conclusionCopula').value);
+            }else{
+                document.getElementById('statementPremiseType').textContent=getPropositionType(document.getElementById('statementPremiseQuantifier').value,document.getElementById('statementPremiseCopula').value);
+                document.getElementById('statementConclusionType').textContent=getPropositionType(document.getElementById('statementConclusionQuantifier').value,document.getElementById('statementConclusionCopula').value);
+            }
+            resetValidityDisplay();
+        }
+
+        function resetValidityDisplay(){const vd=document.getElementById('validityDisplay');vd.className='validity-display pending';document.getElementById('validityFormCode').textContent='?';document.getElementById('validityName').textContent='Is it Valid?';document.getElementById('validityBadge').textContent='Click to Check';document.getElementById('validityNote').textContent='Fill in and click "Check Validity".';updateSearchQuery();}
+
+        function validatePropositions(){if(currentMode==='statement')return validateStatementPropositions();
+            const p1s=document.getElementById('premise1Subject').value.trim().toLowerCase(),p1p=document.getElementById('premise1Predicate').value.trim().toLowerCase(),p2s=document.getElementById('premise2Subject').value.trim().toLowerCase(),p2p=document.getElementById('premise2Predicate').value.trim().toLowerCase(),cs=document.getElementById('conclusionSubject').value.trim().toLowerCase(),cp=document.getElementById('conclusionPredicate').value.trim().toLowerCase();
+            const w=[];document.getElementById('premise1Subject').classList.remove('error');document.getElementById('premise1Predicate').classList.remove('error');document.getElementById('premise2Subject').classList.remove('error');document.getElementById('premise2Predicate').classList.remove('error');
+            const pf=p1s&&p1p&&p2s&&p2p,cf=cs&&cp,af=pf&&cf;
+            if(pf){if(p1s===p1p){w.push('P1: Subject and Predicate must differ.');document.getElementById('premise1Subject').classList.add('error');document.getElementById('premise1Predicate').classList.add('error');}if(p2s===p2p){w.push('P2: Subject and Predicate must differ.');document.getElementById('premise2Subject').classList.add('error');document.getElementById('premise2Predicate').classList.add('error');}const ut=new Set([p1s,p1p,p2s,p2p]);if(ut.size!==3)w.push(`${ut.size} unique terms found. Need exactly 3.`);}
+            if(af){if(cs===cp)w.push('Conclusion: Subject and Predicate must differ.');let mt=null;for(const t of[p1s,p1p])if([p2s,p2p].includes(t)){mt=t;break;}if(mt&&(cs===mt||cp===mt))w.push(`Middle term cannot appear in conclusion.`);const apt=new Set([p1s,p1p,p2s,p2p]);if(!apt.has(cs))w.push(`Conclusion subject must appear in premises.`);if(!apt.has(cp))w.push(`Conclusion predicate must appear in premises.`);}
+            const wb=document.getElementById('warningBox'),wl=document.getElementById('warningList'),sb=document.getElementById('successBox');
+            if(w.length>0){wl.innerHTML=w.map(x=>`<li>${x}</li>`).join('');wb.classList.add('visible');sb.classList.remove('visible');}else if(af){wb.classList.remove('visible');sb.classList.add('visible');}else{wb.classList.remove('visible');sb.classList.remove('visible');}
+            return w.length===0;
+        }
+
+        function validateStatementPropositions(){
+            const ps=document.getElementById('statementPremiseSubject').value.trim().toLowerCase(),pp=document.getElementById('statementPremisePredicate').value.trim().toLowerCase();
+            const w=[];document.getElementById('statementPremiseSubject').classList.remove('error');document.getElementById('statementPremisePredicate').classList.remove('error');
+            if(ps&&pp&&ps===pp){w.push('Subject and Predicate must differ.');document.getElementById('statementPremiseSubject').classList.add('error');document.getElementById('statementPremisePredicate').classList.add('error');}
+            const wb=document.getElementById('warningBox'),wl=document.getElementById('warningList'),sb=document.getElementById('successBox');
+            if(w.length>0){wl.innerHTML=w.map(x=>`<li>${x}</li>`).join('');wb.classList.add('visible');sb.classList.remove('visible');}else if(ps&&pp){wb.classList.remove('visible');sb.classList.add('visible');}else{wb.classList.remove('visible');sb.classList.remove('visible');}
+            return w.length===0;
+        }
+
+        function updateConclusionOptions(){const ts=new Set();['premise1Subject','premise1Predicate','premise2Subject','premise2Predicate'].forEach(id=>{const v=document.getElementById(id).value.trim();if(v)ts.add(v);});const cs=document.getElementById('conclusionSubject'),cp=document.getElementById('conclusionPredicate'),cvs=cs.value,cvp=cp.value;cs.innerHTML='<option value="">Select...</option>';cp.innerHTML='<option value="">Select...</option>';ts.forEach(t=>{cs.appendChild(Object.assign(document.createElement('option'),{value:t,textContent:t}));cp.appendChild(Object.assign(document.createElement('option'),{value:t,textContent:t}));});if(ts.has(cvs))cs.value=cvs;if(ts.has(cvp))cp.value=cvp;}
+
+        function updateStatementConclusionOptions(){const ts=new Set();['statementPremiseSubject','statementPremisePredicate'].forEach(id=>{const v=document.getElementById(id).value.trim();if(v)ts.add(v);});const cs=document.getElementById('statementConclusionSubject'),cp=document.getElementById('statementConclusionPredicate'),cvs=cs.value,cvp=cp.value;cs.innerHTML='<option value="">Select...</option>';cp.innerHTML='<option value="">Select...</option>';ts.forEach(t=>{cs.appendChild(Object.assign(document.createElement('option'),{value:t,textContent:t}));cp.appendChild(Object.assign(document.createElement('option'),{value:t,textContent:t}));});if(ts.has(cvs))cs.value=cvs;if(ts.has(cvp))cp.value=cvp;}
+
+        function updatePremiseLabels(){
+            const cs=document.getElementById('conclusionSubject').value.trim().toLowerCase(),cp=document.getElementById('conclusionPredicate').value.trim().toLowerCase();
+            const p1s=document.getElementById('premise1Subject').value.trim().toLowerCase(),p1p=document.getElementById('premise1Predicate').value.trim().toLowerCase();
+            const p2s=document.getElementById('premise2Subject').value.trim().toLowerCase(),p2p=document.getElementById('premise2Predicate').value.trim().toLowerCase();
+            const l1=document.getElementById('premise1Label'),l2=document.getElementById('premise2Label'),mt1=document.getElementById('majorTypeLabel'),mt2=document.getElementById('minorTypeLabel');
+            l1.textContent='PREMISE 1';l1.classList.remove('major','minor');l2.textContent='PREMISE 2';l2.classList.remove('major','minor');mt1.textContent='Premise 1 Type';mt2.textContent='Premise 2 Type';
+            if(!cs||!cp)return;
+            const p1t=[p1s,p1p],p2t=[p2s,p2p];
+            if(p1t.includes(cp)&&!p1t.includes(cs)&&p2t.includes(cs)&&!p2t.includes(cp)){l1.textContent='MAJOR PREMISE';l1.classList.add('major');l2.textContent='MINOR PREMISE';l2.classList.add('minor');mt1.textContent='Major Type';mt2.textContent='Minor Type';}
+            else if(p2t.includes(cp)&&!p2t.includes(cs)&&p1t.includes(cs)&&!p1t.includes(cp)){l1.textContent='MINOR PREMISE';l1.classList.add('minor');l2.textContent='MAJOR PREMISE';l2.classList.add('major');mt1.textContent='Minor Type';mt2.textContent='Major Type';}
+        }
+
+        function updateLabels(){
+            if(currentMode==='statement'){updateLabelsForMode();return;}
+            const cs=document.getElementById('conclusionSubject').value||'Subject (S)',cp=document.getElementById('conclusionPredicate').value||'Predicate (P)';
+            const allT=[document.getElementById('premise1Subject').value.trim(),document.getElementById('premise1Predicate').value.trim(),document.getElementById('premise2Subject').value.trim(),document.getElementById('premise2Predicate').value.trim()].filter(t=>t);
+            const tc={};allT.forEach(t=>{const l=t.toLowerCase();tc[l]=tc[l]||{count:0,original:t};tc[l].count++;});
+            let mt='Middle (M)';for(const[t,d]of Object.entries(tc))if(d.count>=2&&t!==cs.toLowerCase()&&t!==cp.toLowerCase()){mt=d.original;break;}
+            const sL=cs==='Subject (S)'?cs:cs+' (S)',pL=cp==='Predicate (P)'?cp:cp+' (P)',mL=mt==='Middle (M)'?mt:mt+' (M)';
+            ['premises','conclusion'].forEach(t=>{canvasStates[t].circles[0].label=sL;canvasStates[t].circles[1].label=pL;if(canvasStates[t].circles.length>2)canvasStates[t].circles[2].label=mL;});
+            draw('premises');draw('conclusion');
+        }
+
+        function determineFigure(){
+            const p1s=document.getElementById('premise1Subject').value.trim().toLowerCase(),p1p=document.getElementById('premise1Predicate').value.trim().toLowerCase(),p2s=document.getElementById('premise2Subject').value.trim().toLowerCase(),p2p=document.getElementById('premise2Predicate').value.trim().toLowerCase(),cs=document.getElementById('conclusionSubject').value.trim().toLowerCase(),cp=document.getElementById('conclusionPredicate').value.trim().toLowerCase();
+            if(!p1s||!p1p||!p2s||!p2p||!cs||!cp)return null;
+            let mt=null;for(const t of[p1s,p1p])if([p2s,p2p].includes(t)&&t!==cs&&t!==cp){mt=t;break;}
+            if(!mt)return{error:'Cannot identify middle term.'};
+            let majP,minP;
+            if([p1s,p1p].includes(cp)&&[p2s,p2p].includes(cs)){majP={subject:p1s,predicate:p1p};minP={subject:p2s,predicate:p2p};}
+            else if([p2s,p2p].includes(cp)&&[p1s,p1p].includes(cs)){majP={subject:p2s,predicate:p2p};minP={subject:p1s,predicate:p1p};}
+            else return{error:'Cannot identify major/minor premises.'};
+            let fig;
+            if(majP.subject===mt&&minP.predicate===mt)fig=1;else if(majP.predicate===mt&&minP.predicate===mt)fig=2;else if(majP.subject===mt&&minP.subject===mt)fig=3;else if(majP.predicate===mt&&minP.subject===mt)fig=4;else return{error:'Cannot determine figure.'};
+            const p1T=getPropositionType(document.getElementById('premise1Quantifier').value,document.getElementById('premise1Copula').value),p2T=getPropositionType(document.getElementById('premise2Quantifier').value,document.getElementById('premise2Copula').value),cT=getPropositionType(document.getElementById('conclusionQuantifier').value,document.getElementById('conclusionCopula').value);
+            let majT,minT;if([p1s,p1p].includes(cp)){majT=p1T;minT=p2T;}else{majT=p2T;minT=p1T;}
+            return{figure:fig,mood:majT+minT+cT,middleTerm:mt};
+        }
+
+        function checkValidity(){
+            if(currentMode==='statement')return;
+            const vd=document.getElementById('validityDisplay'),vfc=document.getElementById('validityFormCode'),vn=document.getElementById('validityName'),vb=document.getElementById('validityBadge'),vnt=document.getElementById('validityNote');
+            const p1s=document.getElementById('premise1Subject').value.trim(),p1p=document.getElementById('premise1Predicate').value.trim(),p2s=document.getElementById('premise2Subject').value.trim(),p2p=document.getElementById('premise2Predicate').value.trim(),cs=document.getElementById('conclusionSubject').value.trim(),cp=document.getElementById('conclusionPredicate').value.trim();
+            if(!p1s||!p1p||!p2s||!p2p||!cs||!cp){vd.className='validity-display invalid';vfc.textContent='---';vn.textContent='Incomplete';vb.textContent='Missing Data';vnt.textContent='Fill in all fields.';updateSearchQuery();return;}
+            const fi=determineFigure();
+            if(!fi||fi.error){vd.className='validity-display invalid';vfc.textContent='???';vn.textContent='Invalid Structure';vb.textContent='✗ Invalid';vnt.textContent=fi?fi.error:'Invalid structure.';updateSearchQuery();return;}
+            const{figure,mood}=fi,fc=`${mood}-${figure}`;
+            if(unconditionallyValid[figure]&&unconditionallyValid[figure][mood]){vd.className='validity-display valid';vfc.textContent=fc;vn.textContent=unconditionallyValid[figure][mood];vb.textContent='✓ Valid';vnt.textContent='Unconditionally valid.';updateSearchQuery();return;}
+            if(conditionallyValid[figure]&&conditionallyValid[figure][mood]){const info=conditionallyValid[figure][mood];vd.className='validity-display conditional';vfc.textContent=fc;vn.textContent=info.name;vb.textContent='⚠ Conditionally Valid';vnt.textContent=`Aristotelian only. ${info.condition}.`;updateSearchQuery();return;}
+            vd.className='validity-display invalid';vfc.textContent=fc;vn.textContent='No Valid Form';vb.textContent='✗ Invalid';vnt.textContent=`${fc} is not among the 24 valid forms.`;updateSearchQuery();
+        }
+
+        // ============================================
+        // EVENT HANDLERS
+        // ============================================
+        function handlePremiseInput(){updateConclusionOptions();validatePropositions();updatePremiseLabels();updateLabels();updateTypes();updateDistributionBadges();updateAlternativeExpressions();resetValidityDisplay();}
+        function handleConclusionChange(){validatePropositions();updatePremiseLabels();updateLabels();updateTypes();updateDistributionBadges();updateAlternativeExpressions();resetValidityDisplay();}
+        function handleQuantifierCopulaChange(){updateTypes();updateDistributionBadges();updateAlternativeExpressions();resetValidityDisplay();}
+        function handleStatementChange(){updateStatementConclusionOptions();validateStatementPropositions();updateTypes();updateDistributionBadges();updateAlternativeExpressions();updateLabelsForMode();}
+
+        // ============================================
+        // ===== AUTO DRAW FEATURE =====
+        // ============================================
+
+        function generateAllRegionKeys(circles) {
+            const regions = [];
+            for (let i = 1; i < (1 << circles.length); i++) {
+                const region = [];
+                for (let j = 0; j < circles.length; j++) {
+                    if (i & (1 << j)) region.push(circles[j]);
+                }
+                regions.push(region.sort().join('-'));
+            }
+            return regions;
+        }
+
+        function getRegionsToShadeForProp(subjectCircle, predicateCircle, propType, numCircles) {
+            const allCircles = numCircles === 2 ? ['S', 'P'] : ['S', 'P', 'M'];
+            const allRegions = generateAllRegionKeys(allCircles);
+            if (propType === 'A') {
+                return allRegions.filter(key => { const c = key.split('-'); return c.includes(subjectCircle) && !c.includes(predicateCircle); });
+            } else if (propType === 'E') {
+                return allRegions.filter(key => { const c = key.split('-'); return c.includes(subjectCircle) && c.includes(predicateCircle); });
+            }
+            return [];
+        }
+
+        function getExistenceRegionsForProp(subjectCircle, predicateCircle, propType, numCircles) {
+            const allCircles = numCircles === 2 ? ['S', 'P'] : ['S', 'P', 'M'];
+            const allRegions = generateAllRegionKeys(allCircles);
+            if (propType === 'I') {
+                return allRegions.filter(key => { const c = key.split('-'); return c.includes(subjectCircle) && c.includes(predicateCircle); });
+            } else if (propType === 'O') {
+                return allRegions.filter(key => { const c = key.split('-'); return c.includes(subjectCircle) && !c.includes(predicateCircle); });
+            }
+            return [];
+        }
+
+        function findRegionCenter(tabName, regionKey) {
+            const canvas = canvases[tabName];
+            let sumX = 0, sumY = 0, count = 0;
+            const step = 4;
+            for (let x = 0; x < canvas.width; x += step) {
+                for (let y = 0; y < canvas.height; y += step) {
+                    const regions = getRegionsAtPoint(x, y, tabName);
+                    if (regions.length === 0) continue;
+                    if (getRegionKey([...regions]) === regionKey) { sumX += x; sumY += y; count++; }
+                }
+            }
+            return count === 0 ? null : { x: sumX / count, y: sumY / count };
+        }
+
+        function findBoundaryPoint(tabName, regionKey1, regionKey2) {
+            const state = canvasStates[tabName];
+            const c1 = new Set(regionKey1.split('-')), c2 = new Set(regionKey2.split('-'));
+            const allCircleIds = state.circles.length === 2 ? ['S', 'P'] : ['S', 'P', 'M'];
+            let sep = null;
+            for (const c of c2) if (!c1.has(c)) { sep = c; break; }
+            if (!sep) for (const c of c1) if (!c2.has(c)) { sep = c; break; }
+            if (!sep) {
+                const cn1 = findRegionCenter(tabName, regionKey1), cn2 = findRegionCenter(tabName, regionKey2);
+                if (!cn1 || !cn2) return cn1 || cn2;
+                return { x: (cn1.x + cn2.x) / 2, y: (cn1.y + cn2.y) / 2 };
+            }
+            const sepIdx = sep === 'S' ? 0 : (sep === 'P' ? 1 : 2);
+            const sepCircle = state.circles[sepIdx];
+            const common = [...c1].filter(c => c2.has(c));
+            const excluded = allCircleIds.filter(c => !c1.has(c) && !c2.has(c));
+            const numSamples = 1440;
+            const validAngles = [];
+            for (let i = 0; i < numSamples; i++) {
+                const theta = (2 * Math.PI * i) / numSamples;
+                const x = sepCircle.x + sepCircle.r * Math.cos(theta);
+                const y = sepCircle.y + sepCircle.r * Math.sin(theta);
+                let valid = true;
+                for (const c of common) { const ci = c === 'S' ? 0 : (c === 'P' ? 1 : 2); if (!pointInCircle(x, y, state.circles[ci])) { valid = false; break; } }
+                if (!valid) continue;
+                for (const c of excluded) { const ci = c === 'S' ? 0 : (c === 'P' ? 1 : 2); if (pointInCircle(x, y, state.circles[ci])) { valid = false; break; } }
+                if (!valid) continue;
+                validAngles.push(theta);
+            }
+            if (validAngles.length === 0) {
+                const cn1 = findRegionCenter(tabName, regionKey1), cn2 = findRegionCenter(tabName, regionKey2);
+                if (!cn1 || !cn2) return cn1 || cn2;
+                return { x: (cn1.x + cn2.x) / 2, y: (cn1.y + cn2.y) / 2 };
+            }
+            let sumCos = 0, sumSin = 0;
+            for (const theta of validAngles) { sumCos += Math.cos(theta); sumSin += Math.sin(theta); }
+            const midTheta = Math.atan2(sumSin / validAngles.length, sumCos / validAngles.length);
+            return { x: sepCircle.x + sepCircle.r * Math.cos(midTheta), y: sepCircle.y + sepCircle.r * Math.sin(midTheta) };
+        }
+
+        function getTermToCircleMap() {
+            if (currentMode === 'statement') {
+                const map = {};
+                const s = document.getElementById('statementPremiseSubject').value.trim().toLowerCase();
+                const p = document.getElementById('statementPremisePredicate').value.trim().toLowerCase();
+                if (s) map[s] = 'S'; if (p) map[p] = 'P';
+                return map;
+            }
+            const cs = document.getElementById('conclusionSubject').value.trim().toLowerCase();
+            const cp = document.getElementById('conclusionPredicate').value.trim().toLowerCase();
+            const p1s = document.getElementById('premise1Subject').value.trim().toLowerCase();
+            const p1p = document.getElementById('premise1Predicate').value.trim().toLowerCase();
+            const p2s = document.getElementById('premise2Subject').value.trim().toLowerCase();
+            const p2p = document.getElementById('premise2Predicate').value.trim().toLowerCase();
+            const map = {};
+            if (cs && cp) {
+                map[cs] = 'S'; map[cp] = 'P';
+                const allTerms = new Set([p1s, p1p, p2s, p2p].filter(t => t));
+                for (const t of allTerms) { if (t !== cs && t !== cp) { map[t] = 'M'; break; } }
+            } else {
+                const allTerms = [p1s, p1p, p2s, p2p].filter(t => t);
+                const counts = {}; allTerms.forEach(t => counts[t] = (counts[t] || 0) + 1);
+                let mt = null; for (const [t, c] of Object.entries(counts)) if (c >= 2) { mt = t; break; }
+                if (mt) {
+                    map[mt] = 'M';
+                    const p1Other = [p1s, p1p].find(t => t !== mt);
+                    const p2Other = [p2s, p2p].find(t => t !== mt);
+                    if (p2Other) map[p2Other] = 'S';
+                    if (p1Other) map[p1Other] = 'P';
+                }
+            }
+            return map;
+        }
+
+        function autoDrawPremise(premiseNum, tabName) {
+            const state = canvasStates[tabName];
+            let quantifier, subject, copula, predicate, subjectCircle, predicateCircle;
+            if (currentMode === 'statement') {
+                if (premiseNum === 2) { showToast('Only one premise in Statement Mode', 'info'); return; }
+                quantifier = document.getElementById('statementPremiseQuantifier').value;
+                subject = document.getElementById('statementPremiseSubject').value.trim().toLowerCase();
+                copula = document.getElementById('statementPremiseCopula').value;
+                predicate = document.getElementById('statementPremisePredicate').value.trim().toLowerCase();
+                if (!subject || !predicate) { showToast('Fill in premise terms first', 'error'); return; }
+                subjectCircle = 'S'; predicateCircle = 'P';
+            } else {
+                const pfx = premiseNum === 1 ? 'premise1' : 'premise2';
+                quantifier = document.getElementById(pfx + 'Quantifier').value;
+                subject = document.getElementById(pfx + 'Subject').value.trim().toLowerCase();
+                copula = document.getElementById(pfx + 'Copula').value;
+                predicate = document.getElementById(pfx + 'Predicate').value.trim().toLowerCase();
+                if (!subject || !predicate) { showToast(`Fill in Premise ${premiseNum} first`, 'error'); return; }
+                const mapping = getTermToCircleMap();
+                subjectCircle = mapping[subject]; predicateCircle = mapping[predicate];
+                if (!subjectCircle || !predicateCircle) { showToast('Select conclusion terms to determine circle mapping', 'error'); return; }
+            }
+            const propType = getPropositionType(quantifier, copula);
+            const color = premiseNum === 1 ? '#3b82f6' : '#ef4444';
+            const stripeAngle = premiseNum === 1 ? 45 : 135;
+            const numCircles = state.circles.length;
+            if (propType === 'A' || propType === 'E') {
+                const regions = getRegionsToShadeForProp(subjectCircle, predicateCircle, propType, numCircles);
+                for (const rk of regions) {
+                    if (!state.regionColors[rk]) state.regionColors[rk] = [];
+                    state.regionColors[rk].push({ color, transparency: 0, useStripes: true, stripeAngle });
+                }
+                showToast(`P${premiseNum} (${propType}) drawn — ${color === '#3b82f6' ? 'blue' : 'red'} ${stripeAngle}° stripes`, 'success');
+            } else {
+                const existRegions = getExistenceRegionsForProp(subjectCircle, predicateCircle, propType, numCircles);
+                let pos = null;
+                if (numCircles === 2 || existRegions.length <= 1) {
+                    pos = existRegions.length > 0 ? findRegionCenter(tabName, existRegions[0]) : null;
+                } else {
+                    const unshaded = existRegions.filter(r => !state.regionColors[r] || state.regionColors[r].length === 0);
+                    if (unshaded.length === 1) pos = findRegionCenter(tabName, unshaded[0]);
+                    else if (unshaded.length === 0 || unshaded.length >= 2) pos = findBoundaryPoint(tabName, existRegions[0], existRegions[1]);
+                }
+                if (pos) state.existenceMarkers.push(pos);
+                showToast(`P${premiseNum} (${propType}) — existence marker placed`, 'success');
+            }
+            draw(tabName);
+        }
+
+        function autoDrawBoth(tabName) {
+            if (currentMode === 'statement') { autoDrawPremise(1, tabName); return; }
+            const p1T = getPropositionType(document.getElementById('premise1Quantifier').value, document.getElementById('premise1Copula').value);
+            const p2T = getPropositionType(document.getElementById('premise2Quantifier').value, document.getElementById('premise2Copula').value);
+            const order = [];
+            if (p1T === 'A' || p1T === 'E') order.push(1);
+            if (p2T === 'A' || p2T === 'E') order.push(2);
+            if (p1T === 'I' || p1T === 'O') order.push(1);
+            if (p2T === 'I' || p2T === 'O') order.push(2);
+            const seen = new Set();
+            order.filter(n => { if (seen.has(n)) return false; seen.add(n); return true; })
+                 .forEach(n => autoDrawPremise(n, tabName));
+        }
+
+        function autoDrawConclusion(tabName) {
+            const state = canvasStates[tabName];
+            let quantifier, subject, copula, predicate, subjectCircle, predicateCircle;
+            if (currentMode === 'statement') {
+                quantifier = document.getElementById('statementConclusionQuantifier').value;
+                subject = document.getElementById('statementConclusionSubject').value.trim().toLowerCase();
+                copula = document.getElementById('statementConclusionCopula').value;
+                predicate = document.getElementById('statementConclusionPredicate').value.trim().toLowerCase();
+                if (!subject || !predicate) { showToast('Select conclusion terms first', 'error'); return; }
+                const ps = document.getElementById('statementPremiseSubject').value.trim().toLowerCase();
+                const pp = document.getElementById('statementPremisePredicate').value.trim().toLowerCase();
+                const map = {};
+                if (ps) map[ps] = 'S'; if (pp) map[pp] = 'P';
+                subjectCircle = map[subject]; predicateCircle = map[predicate];
+            } else {
+                quantifier = document.getElementById('conclusionQuantifier').value;
+                subject = document.getElementById('conclusionSubject').value.trim().toLowerCase();
+                copula = document.getElementById('conclusionCopula').value;
+                predicate = document.getElementById('conclusionPredicate').value.trim().toLowerCase();
+                if (!subject || !predicate) { showToast('Select conclusion terms first', 'error'); return; }
+                subjectCircle = 'S'; predicateCircle = 'P';
+            }
+            if (!subjectCircle || !predicateCircle) { showToast('Cannot map conclusion terms to circles', 'error'); return; }
+            const propType = getPropositionType(quantifier, copula);
+            const color = '#22c55e', stripeAngle = 0;
+            const numCircles = state.circles.length;
+            if (propType === 'A' || propType === 'E') {
+                const regions = getRegionsToShadeForProp(subjectCircle, predicateCircle, propType, numCircles);
+                for (const rk of regions) {
+                    if (!state.regionColors[rk]) state.regionColors[rk] = [];
+                    state.regionColors[rk].push({ color, transparency: 0, useStripes: true, stripeAngle });
+                }
+            } else {
+                const existRegions = getExistenceRegionsForProp(subjectCircle, predicateCircle, propType, numCircles);
+                let pos = null;
+                if (existRegions.length <= 1 || numCircles === 2) {
+                    pos = existRegions.length > 0 ? findRegionCenter(tabName, existRegions[0]) : null;
+                } else {
+                    const unshaded = existRegions.filter(r => !state.regionColors[r] || state.regionColors[r].length === 0);
+                    pos = unshaded.length === 1 ? findRegionCenter(tabName, unshaded[0]) : findBoundaryPoint(tabName, existRegions[0], existRegions[1]);
+                }
+                if (pos) state.existenceMarkers.push(pos);
+            }
+            showToast(`Conclusion (${propType}) auto-drawn — green 0° stripes`, 'success');
+            draw(tabName);
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.getElementById('checkValidityBtn').addEventListener('click', e => { e.preventDefault(); checkValidity(); });
+        document.getElementById('navGotoInput').addEventListener('keypress', e => { if (e.key === 'Enter') navigateGoto(); });
+        document.getElementById('navGotoInputStatement').addEventListener('keypress', e => { if (e.key === 'Enter') navigateGotoStatement(); });
+        window.addEventListener('resize', () => { resizeCanvas('premises'); resizeCanvas('conclusion'); });
+        resizeCanvas('premises'); resizeCanvas('conclusion');
+        updateTypes(); updateDistributionBadges(); updateAlternativeExpressions(); resetSearchQuery(); updateNavigationDisplay(); updateAllSelectOptions();
+        updatePatternPreview('premises'); updatePatternPreview('conclusion');
+        // Initialize auto-draw button states
+        refreshAllAutoDrawButtons();
+    </script>
+</body>
+</html>
